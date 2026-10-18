@@ -8,7 +8,7 @@ enum BackgroundRemovalError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .noSubject: "No foreground subject was found in this image."
+        case .noSubject: "No foreground subject was found in this image. Try the Magic Wand tool instead: click the background, then press Delete."
         case .failed: "Background removal failed."
         }
     }

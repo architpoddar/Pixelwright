@@ -1,3 +1,4 @@
+import AppKit
 import PixelwrightCore
 import SwiftUI
 
@@ -10,7 +11,17 @@ struct ContentView: View {
         VStack(spacing: 0) {
             ZStack {
                 if let image = model.image {
-                    CanvasView(image: image, zoom: zoom)
+                    CanvasView(
+                        image: image,
+                        selectionOverlay: model.selectionOverlay,
+                        zoom: zoom,
+                        wandActive: model.tool == .magicWand
+                    ) { x, y in
+                        let flags = NSEvent.modifierFlags
+                        let combine: AppModel.SelectionCombine =
+                            flags.contains(.shift) ? .add : flags.contains(.option) ? .subtract : .replace
+                        model.wandClick(x: x, y: y, combine: combine)
+                    }
                 } else {
                     ContentUnavailableView(
                         "No image open",
@@ -32,6 +43,7 @@ struct ContentView: View {
             }
 
             Divider()
+            if model.tool == .magicWand { wandBar; Divider() }
             statusBar
         }
         .toolbar {
@@ -43,14 +55,20 @@ struct ContentView: View {
                     .disabled(!model.canEdit)
                 Button("Remove Background", systemImage: "person.crop.rectangle") { model.removeBackground() }
                     .disabled(!model.canEdit)
+                Toggle("Magic Wand", systemImage: "wand.and.stars", isOn: Binding(
+                    get: { model.tool == .magicWand },
+                    set: { model.tool = $0 ? .magicWand : .none }
+                ))
+                .disabled(!model.hasImage)
+                .help("Magic Wand: click to select similar pixels. Shift adds, Option subtracts.")
             }
         }
         .navigationTitle(model.fileName)
         .sheet(isPresented: $model.showingResize) {
-            if let image = model.image { ResizeSheet(original: image) }
+            if let image = model.image { ResizeSheet(original: image, resolution: model.resolution) }
         }
         .sheet(isPresented: $model.showingCanvasSize) {
-            if let image = model.image { CanvasSizeSheet(original: image) }
+            if let image = model.image { CanvasSizeSheet(original: image, resolution: model.resolution) }
         }
         .alert("Something went wrong", isPresented: Binding(
             get: { model.errorMessage != nil },
@@ -62,10 +80,45 @@ struct ContentView: View {
         }
     }
 
+    private var wandBar: some View {
+        HStack(spacing: 12) {
+            Label("Magic Wand", systemImage: "wand.and.stars").font(.callout.bold())
+            Text("Tolerance")
+            Slider(value: $model.wandTolerance, in: 0...100, step: 1)
+                .frame(width: 160)
+            Text("\(Int(model.wandTolerance))%")
+                .monospacedDigit()
+                .frame(width: 40, alignment: .trailing)
+            Picker("Mode", selection: $model.wandMode) {
+                ForEach(MagicWandMode.allCases, id: \.self) { Text($0.displayName).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 170)
+            .labelsHidden()
+            Spacer()
+            if let mask = model.selection {
+                Text("\(mask.selectedCount.formatted()) px selected")
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .fixedSize()
+                Button("Delete") { model.deleteSelection() }
+                Button("Deselect") { model.deselect() }
+            } else {
+                Text("Click the image to select").foregroundStyle(.secondary)
+            }
+        }
+        .font(.callout)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+    }
+
     private var statusBar: some View {
         HStack {
             if let image = model.image {
                 Text("\(image.width) × \(image.height) px")
+                Text("·").foregroundStyle(.secondary)
+                Text("\(model.resolution.pixelsPerUnit.formatted(.number.precision(.fractionLength(0...2)))) \(model.resolution.unit.resolutionLabel)")
+                    .foregroundStyle(.secondary)
             }
             Spacer()
             if model.hasImage {
@@ -84,10 +137,14 @@ struct ContentView: View {
     }
 }
 
-/// Shows the image on a checkerboard so transparency is visible.
+/// Shows the image on a checkerboard so transparency is visible, with the selection tinted on top.
 struct CanvasView: View {
     let image: RasterImage
+    let selectionOverlay: CGImage?
     let zoom: Double?
+    let wandActive: Bool
+    /// Called with the image pixel under a click while the wand is active.
+    let onWandClick: (Int, Int) -> Void
 
     var body: some View {
         GeometryReader { geo in
@@ -104,9 +161,23 @@ struct CanvasView: View {
                             .interpolation(scale >= 1 ? .none : .high)
                             .frame(width: w, height: h)
                     }
+                    if let overlay = selectionOverlay {
+                        Image(decorative: overlay, scale: 1)
+                            .resizable()
+                            .interpolation(.none)
+                            .frame(width: w, height: h)
+                            .allowsHitTesting(false)
+                    }
                 }
                 .frame(width: w, height: h)
                 .shadow(radius: 3)
+                .contentShape(Rectangle())
+                .gesture(SpatialTapGesture().onEnded { tap in
+                    guard wandActive else { return }
+                    let x = Int(tap.location.x / scale), y = Int(tap.location.y / scale)
+                    guard x >= 0, y >= 0, x < image.width, y < image.height else { return }
+                    onWandClick(x, y)
+                })
                 .frame(minWidth: geo.size.width, minHeight: geo.size.height)
             }
         }

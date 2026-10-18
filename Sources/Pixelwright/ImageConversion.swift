@@ -19,8 +19,9 @@ enum ImageIOError: LocalizedError {
 }
 
 extension RasterImage {
-    /// Reads an image file, honoring EXIF orientation, into straight-alpha sRGB RGBA8.
-    static func load(from url: URL) throws -> RasterImage {
+    /// Reads an image file, honoring EXIF orientation, into straight-alpha sRGB RGBA8, along
+    /// with its stored resolution (96 pixels per inch when the file doesn't say).
+    static func load(from url: URL) throws -> (image: RasterImage, resolution: ImageResolution) {
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else {
             throw ImageIOError.cannotRead(url)
         }
@@ -33,7 +34,10 @@ extension RasterImage {
             ?? CGImageSourceCreateImageAtIndex(source, 0, nil) else {
             throw ImageIOError.cannotRead(url)
         }
-        return try RasterImage(cgImage: cg)
+        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+        let dpiX = (properties?[kCGImagePropertyDPIWidth] as? NSNumber)?.doubleValue
+        let resolution = dpiX.flatMap { $0 > 0 ? ImageResolution(pixelsPerInch: $0) : nil } ?? .default
+        return (try RasterImage(cgImage: cg), resolution)
     }
 
     init(cgImage: CGImage) throws {
@@ -78,7 +82,7 @@ extension RasterImage {
         )
     }
 
-    func write(to url: URL) throws {
+    func write(to url: URL, resolution: ImageResolution = .default) throws {
         let type: UTType
         switch url.pathExtension.lowercased() {
         case "jpg", "jpeg": type = .jpeg
@@ -91,7 +95,9 @@ extension RasterImage {
         guard let cg = source.makeCGImage(),
               let dest = CGImageDestinationCreateWithURL(url as CFURL, type.identifier as CFString, 1, nil)
         else { throw ImageIOError.cannotWrite(url) }
-        CGImageDestinationAddImage(dest, cg, nil)
+        let dpi = resolution.pixelsPerInch
+        let properties: [CFString: Any] = [kCGImagePropertyDPIWidth: dpi, kCGImagePropertyDPIHeight: dpi]
+        CGImageDestinationAddImage(dest, cg, properties as CFDictionary)
         guard CGImageDestinationFinalize(dest) else { throw ImageIOError.cannotWrite(url) }
     }
 

@@ -15,9 +15,10 @@ struct PixelwrightApp: App {
         Window("Pixelwright", id: "main") {
             ContentView()
                 .environmentObject(model)
-                .frame(minWidth: 640, minHeight: 440)
+                .frame(minWidth: 640, minHeight: 560)
                 .onOpenURL { model.open($0) }
         }
+        .defaultSize(width: 960, height: 700)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("Open…") { model.openWithPanel() }
@@ -33,6 +34,30 @@ struct PixelwrightApp: App {
                 Button("Redo") { model.redo() }
                     .keyboardShortcut("z", modifiers: [.command, .shift])
                     .disabled(!model.canRedo)
+            }
+            CommandMenu("Select") {
+                Button("Magic Wand") { model.tool = model.tool == .magicWand ? .none : .magicWand }
+                    .keyboardShortcut("w", modifiers: [.command, .shift])
+                    .disabled(!model.hasImage)
+                Divider()
+                Button("Select All") { model.selectAll() }
+                    .keyboardShortcut("a")
+                    .disabled(!model.canEdit)
+                Button("Deselect") { model.deselect() }
+                    .keyboardShortcut("a", modifiers: [.command, .shift])
+                    .disabled(!model.hasSelection)
+                Button("Invert Selection") { model.invertSelection() }
+                    .keyboardShortcut("i")
+                    .disabled(!model.canEdit)
+                Divider()
+                Button("Expand Selection by 1 px") { model.growSelection(by: 1) }
+                    .disabled(!model.hasSelection)
+                Button("Contract Selection by 1 px") { model.growSelection(by: -1) }
+                    .disabled(!model.hasSelection)
+                Divider()
+                Button("Delete Selection") { model.deleteSelection() }
+                    .keyboardShortcut(.delete, modifiers: [])
+                    .disabled(!model.hasSelection || !model.canEdit)
             }
             CommandMenu("Image") {
                 Button("Resize…") { model.showingResize = true }
