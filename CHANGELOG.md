@@ -27,6 +27,10 @@ First version.
 - Batch Resize: many images to a size you choose, saved as copies in a folder.
 - Copy and paste as a new image; open and save; undo and redo; zoom; drag-and-drop.
 
+**Undo and redo**
+- Up to 20 steps, with Undo and Redo buttons at the bottom of the tool palette and menu items that name
+  the action ("Undo Resize", "Redo Blur"). Hovering a button shows the same.
+
 **Install**
 - `./scripts/install.sh` builds the app and installs it into Applications in one command, with
   `--open`, `--to` and `--uninstall`, and safeguards so it can't replace another app or lose work.

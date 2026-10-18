@@ -56,10 +56,10 @@ struct PixelwrightApp: App {
                     .keyboardShortcut("b", modifiers: [.command, .option])
             }
             CommandGroup(replacing: .undoRedo) {
-                Button("Undo") { model.undoCommand() }
+                Button(model.undoMenuTitle) { model.undoCommand() }
                     .keyboardShortcut("z")
                     .disabled(!model.canUndo && !model.isSheetOpen)
-                Button("Redo") { model.redoCommand() }
+                Button(model.redoMenuTitle) { model.redoCommand() }
                     .keyboardShortcut("z", modifiers: [.command, .shift])
                     .disabled(!model.canRedo && !model.isSheetOpen)
             }

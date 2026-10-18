@@ -22,6 +22,20 @@ public enum Effect: Equatable, Sendable {
     case sepia
     case invertColors
 
+    /// The name shown in menus, for example "Undo Blur".
+    public var displayName: String {
+        switch self {
+        case .brightnessContrast: "Brightness / Contrast"
+        case .hueSaturation: "Hue / Saturation"
+        case .blur: "Blur"
+        case .sharpen: "Sharpen"
+        case .pixelate: "Pixelate"
+        case .blackAndWhite: "Black and White"
+        case .sepia: "Sepia"
+        case .invertColors: "Invert Colors"
+        }
+    }
+
     /// True when applying the effect would change nothing.
     public var isIdentity: Bool {
         switch self {

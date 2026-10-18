@@ -16,7 +16,7 @@ Rough priorities. Nothing here is a promise; open an issue to discuss or to pick
   people who think of this as "Paint".
 - **Layers**, so pasted images and text can be moved and edited before they are flattened.
 - **Free-angle rotate** and **straighten**, and a **Levels / Curves** adjustment.
-- **Open Recent**, a **New Image** dialog, and saving back to the same file.
+- **Open Recent** and a **New Image** dialog. (Saving stays copy-only: originals are never overwritten.)
 - **Better edges** on one-click Remove Background (fine hair and fur).
 - **Close the remaining open questions** in section 5 of [resize-canvas-spec.md](resize-canvas-spec.md).
 

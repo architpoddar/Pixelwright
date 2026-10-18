@@ -108,6 +108,10 @@ struct ContentView: View {
             toolButton(.magicWand, "Magic Wand", "wand.and.stars",
                        "Magic Wand: click to select pixels of a similar color (⇧⌘W)")
             Spacer()
+            historyButton("arrow.uturn.backward", name: "Undo", tip: model.undoActionName.map { "Undo \($0) (⌘Z)" } ?? "Nothing to undo",
+                          enabled: model.canUndo) { model.undo() }
+            historyButton("arrow.uturn.forward", name: "Redo", tip: model.redoActionName.map { "Redo \($0) (⇧⌘Z)" } ?? "Nothing to redo",
+                          enabled: model.canRedo) { model.redo() }
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 6)
@@ -214,6 +218,21 @@ struct ContentView: View {
     private static func combineMode() -> AppModel.SelectionCombine {
         let flags = NSEvent.modifierFlags
         return flags.contains(.shift) ? .add : flags.contains(.option) ? .subtract : .replace
+    }
+
+    /// Undo or Redo at the bottom of the palette, with a tooltip that names the action.
+    private func historyButton(_ symbol: String, name: String, tip: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 16, weight: .medium))
+                .frame(width: 36, height: 32)
+                .contentShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(enabled ? Color.primary : Color.secondary.opacity(0.5))
+        .disabled(!enabled)
+        .help(tip)
+        .accessibilityLabel(name)
     }
 
     /// One tool in the palette: lights up in the brand color while active, and has a tooltip.

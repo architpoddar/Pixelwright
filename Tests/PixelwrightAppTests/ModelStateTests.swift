@@ -152,3 +152,49 @@ struct OpenFromFinderTests {
         #expect(model.fileName == "second.png")
     }
 }
+
+@Suite("Undo and redo wording")
+@MainActor
+struct UndoWordingTests {
+    @Test("The menu names what will be undone and redone")
+    func names() async throws {
+        let model = AppModel()
+        model.open(try makeImageFile())
+        await waitUntilIdle(model)
+        #expect(model.undoMenuTitle == "Undo" && model.redoMenuTitle == "Redo")
+        #expect(model.undoActionName == nil && !model.canUndo)
+
+        model.rotate(.clockwise90)
+        await waitUntilIdle(model)
+        #expect(model.undoMenuTitle == "Undo Rotate" && model.canUndo)
+
+        model.applyEffect(.blur(radius: 2))
+        await waitUntilIdle(model)
+        #expect(model.undoMenuTitle == "Undo Blur")
+
+        model.undo()
+        #expect(model.undoMenuTitle == "Undo Rotate")
+        #expect(model.redoMenuTitle == "Redo Blur" && model.canRedo)
+
+        model.redo()
+        #expect(model.undoMenuTitle == "Undo Blur")
+        #expect(model.redoMenuTitle == "Redo" && !model.canRedo)
+    }
+
+    @Test("Resize, canvas size and crop are named too")
+    func otherActions() async throws {
+        let model = AppModel()
+        model.open(try makeImageFile())
+        await waitUntilIdle(model)
+        model.resize(width: 10, height: 10, method: .bicubic, gamma: true, resolution: .default)
+        await waitUntilIdle(model)
+        #expect(model.undoActionName == "Resize")
+        model.resizeCanvas(width: 20, height: 20, anchor: .middle, fill: .transparent, resolution: .default)
+        await waitUntilIdle(model)
+        #expect(model.undoActionName == "Canvas Size")
+        model.selectRectangle(PixelRect(x: 0, y: 0, width: 5, height: 5), combine: .replace)
+        model.cropToSelection()
+        await waitUntilIdle(model)
+        #expect(model.undoActionName == "Crop")
+    }
+}

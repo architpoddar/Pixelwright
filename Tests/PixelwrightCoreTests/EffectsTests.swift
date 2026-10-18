@@ -164,3 +164,19 @@ struct ApplyingTests {
         }
     }
 }
+
+@Suite("Effect names")
+struct EffectNameTests {
+    @Test("Every effect has its own readable name")
+    func names() {
+        let all: [Effect] = [
+            .brightnessContrast(brightness: 1, contrast: 1), .hueSaturation(hue: 1, saturation: 1, lightness: 1),
+            .blur(radius: 1), .sharpen(amount: 1, radius: 1), .pixelate(blockSize: 2),
+            .blackAndWhite, .sepia, .invertColors,
+        ]
+        let names = all.map(\.displayName)
+        #expect(Set(names).count == all.count)
+        #expect(names.allSatisfy { !$0.isEmpty })
+        #expect(Effect.blur(radius: 3).displayName == Effect.blur(radius: 9).displayName)
+    }
+}

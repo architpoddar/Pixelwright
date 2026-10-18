@@ -76,7 +76,7 @@ You can also block the app in a firewall such as Little Snitch or LuLu and nothi
   file-size estimate.
 - **Batch Resize** a whole folder of images in one go, to a size you choose, without touching
   the originals.
-- Copy and paste (as a new image), undo and redo, zoom, drag-and-drop.
+- Copy and paste (as a new image), **undo and redo** (20 steps, buttons in the palette or ⌘Z / ⇧⌘Z), zoom, drag-and-drop.
 
 ## Install
 

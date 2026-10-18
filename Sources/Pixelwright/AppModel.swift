@@ -36,6 +36,8 @@ final class AppModel: ObservableObject {
         let resolution: ImageResolution
         /// Which version of the image this is, so we can tell if the current one has been saved.
         let stateID: UUID
+        /// The action that moved away from this version ("Resize", "Crop", ...), for the menu text.
+        let action: String
     }
 
     @Published private(set) var image: RasterImage? {
@@ -83,6 +85,12 @@ final class AppModel: ObservableObject {
     var canRedo: Bool { !redoStack.isEmpty && !isBusy }
     var canEdit: Bool { hasImage && !isBusy }
     var hasSelection: Bool { selection != nil }
+
+    /// What Undo would undo, for example "Resize". Nil when there is nothing to undo.
+    var undoActionName: String? { undoStack.last?.action }
+    var redoActionName: String? { redoStack.last?.action }
+    var undoMenuTitle: String { undoActionName.map { "Undo \($0)" } ?? "Undo" }
+    var redoMenuTitle: String { redoActionName.map { "Redo \($0)" } ?? "Redo" }
     /// True when the picture has changes that haven't been saved to a copy.
     var isEdited: Bool { hasImage && stateID != savedStateID }
 
@@ -280,19 +288,19 @@ final class AppModel: ObservableObject {
     // MARK: Edits
 
     func resize(width: Int, height: Int, method: ResamplingMethod, gamma: Bool, resolution newResolution: ImageResolution) {
-        edit("Resizing…", resolution: newResolution) { image in
+        edit("Resizing…", action: "Resize", resolution: newResolution) { image in
             Resampler.resize(image, width: width, height: height, method: method, gammaCorrect: gamma)
         }
     }
 
     func resizeCanvas(width: Int, height: Int, anchor: AnchorEdge, fill: CanvasFill, resolution newResolution: ImageResolution) {
-        edit("Resizing canvas…", resolution: newResolution) { image in
+        edit("Resizing canvas…", action: "Canvas Size", resolution: newResolution) { image in
             CanvasSize.resize(image, newWidth: width, newHeight: height, anchor: anchor, fill: fill)
         }
     }
 
     func removeBackground() {
-        edit("Removing background…") { image in
+        edit("Removing background…", action: "Remove Background") { image in
             try BackgroundRemoval.removeBackground(from: image)
         }
     }
@@ -301,7 +309,7 @@ final class AppModel: ObservableObject {
     func deleteSelection() {
         guard let mask = selection else { return }
         let feather = Int(featherRadius)
-        edit("Deleting selection…") { image in image.clearingPixels(in: mask, feather: feather) }
+        edit("Deleting selection…", action: "Delete Selection") { image in image.clearingPixels(in: mask, feather: feather) }
     }
 
     // MARK: Adjustments and effects
@@ -310,7 +318,7 @@ final class AppModel: ObservableObject {
     func applyEffect(_ effect: Effect) {
         guard !effect.isIdentity else { return }
         let mask = selection
-        edit("Applying…", keepSelection: true) { image in image.applying(effect, within: mask) }
+        edit("Applying…", action: effect.displayName, keepSelection: true) { image in image.applying(effect, within: mask) }
     }
 
     private var previewTask: Task<Void, Never>?
@@ -340,15 +348,15 @@ final class AppModel: ObservableObject {
     // MARK: Crop, rotate, flip
 
     func rotate(_ rotation: Rotation) {
-        edit("Rotating…") { ImageTransform.rotated($0, rotation) }
+        edit("Rotating…", action: "Rotate") { ImageTransform.rotated($0, rotation) }
     }
 
     func flipHorizontally() {
-        edit("Flipping…") { ImageTransform.flippedHorizontally($0) }
+        edit("Flipping…", action: "Flip") { ImageTransform.flippedHorizontally($0) }
     }
 
     func flipVertically() {
-        edit("Flipping…") { ImageTransform.flippedVertically($0) }
+        edit("Flipping…", action: "Flip") { ImageTransform.flippedVertically($0) }
     }
 
     /// Crops to the selection's bounds, cutting out its shape if it isn't a rectangle.
@@ -357,7 +365,7 @@ final class AppModel: ObservableObject {
             errorMessage = EditError.nothingToCrop.errorDescription
             return
         }
-        edit("Cropping…") { image in
+        edit("Cropping…", action: "Crop") { image in
             guard let cropped = image.croppedToSelection(mask) else { throw EditError.nothingToCrop }
             return cropped
         }
@@ -365,7 +373,7 @@ final class AppModel: ObservableObject {
 
     /// Trims fully transparent borders.
     func autoCrop() {
-        edit("Cropping…") { image in
+        edit("Cropping…", action: "Crop") { image in
             guard let cropped = ImageTransform.autoCropped(image) else { throw EditError.fullyTransparent }
             return cropped
         }
@@ -415,7 +423,7 @@ final class AppModel: ObservableObject {
             return
         }
         if let current = image {
-            undoStack.append(Snapshot(image: current, resolution: resolution, stateID: stateID))
+            undoStack.append(Snapshot(image: current, resolution: resolution, stateID: stateID, action: "Paste"))
             if undoStack.count > maxUndoSteps { undoStack.removeFirst() }
             redoStack.removeAll()
         }
@@ -430,13 +438,13 @@ final class AppModel: ObservableObject {
 
     func undo() {
         guard let current = image, let previous = undoStack.popLast() else { return }
-        redoStack.append(Snapshot(image: current, resolution: resolution, stateID: stateID))
+        redoStack.append(Snapshot(image: current, resolution: resolution, stateID: stateID, action: previous.action))
         apply(previous)
     }
 
     func redo() {
         guard let current = image, let next = redoStack.popLast() else { return }
-        undoStack.append(Snapshot(image: current, resolution: resolution, stateID: stateID))
+        undoStack.append(Snapshot(image: current, resolution: resolution, stateID: stateID, action: next.action))
         apply(next)
     }
 
@@ -529,6 +537,7 @@ final class AppModel: ObservableObject {
     /// Any selection is cleared, since its pixels may no longer line up.
     private func edit(
         _ message: String,
+        action: String,
         resolution newResolution: ImageResolution? = nil,
         keepSelection: Bool = false,
         _ transform: @escaping @Sendable (RasterImage) throws -> RasterImage
@@ -538,7 +547,7 @@ final class AppModel: ObservableObject {
         run(message) {
             let result = try transform(original)
             await MainActor.run {
-                self.undoStack.append(Snapshot(image: original, resolution: originalResolution, stateID: self.stateID))
+                self.undoStack.append(Snapshot(image: original, resolution: originalResolution, stateID: self.stateID, action: action))
                 if self.undoStack.count > self.maxUndoSteps { self.undoStack.removeFirst() }
                 self.redoStack.removeAll()
                 self.stateID = UUID()
