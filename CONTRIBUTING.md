@@ -22,7 +22,7 @@ If you're unsure whether something is OK to include, ask in the issue before wri
 You need macOS 14+ and Xcode 16+.
 
 ```bash
-git clone https://github.com/<your-account>/Pixelwright.git
+git clone https://github.com/architpoddar/Pixelwright.git
 cd Pixelwright
 swift build
 swift test

@@ -40,15 +40,23 @@ Kernels live in `ResamplingKernel.swift`:
 |---|---|
 | Bicubic | Mitchell-Netravali with B=0, C=1/2 (Catmull-Rom) |
 | Bicubic (Smooth) | Mitchell-Netravali with B=1, C=0 (cubic B-spline) |
-| Bilinear | Triangle |
+| Bilinear | Triangle, widened when shrinking |
+| Bilinear (Low Quality) | Triangle, never widened (two taps) |
+| Adaptive (Sharp) | Picks Lanczos, Spline36, Catmull-Rom or a quadratic from the scale factor |
 | Lanczos | Lanczos, 3 lobes |
+| Fant | Exact area averaging (a separate weight builder, not a kernel) |
 | Nearest Neighbor | Point sampling |
+
+Each method maps to a `WeightStrategy` (a kernel, or area averaging). Weights that fall off the
+edge of the image are folded into the edge pixel.
 
 ### Adding a resampling method
 
-1. Add a case to `ResamplingMethod` with its `displayName`.
-2. Return a `ResamplingKernel` from `kernel` (a `support` half-width and a `weight` function).
-   If it needs a different pipeline, handle it in `Resampler.resize` like Nearest Neighbor.
+1. Add a case to `ResamplingMethod` with its `displayName`. The Resize dialog lists the cases in
+   declaration order, so place it where it should appear.
+2. Return a `WeightStrategy` from `weightStrategy(scaleX:scaleY:)`: a `ResamplingKernel` (a
+   `support` half-width and a `weight` function) or area averaging. If it needs a different
+   pipeline, handle it in `Resampler.resize` like Nearest Neighbor.
 3. Add tests: kernel values at known points, normalized weights (the existing
    "Axis weights are normalized" test covers every case automatically), and a solid-color test.
 4. Document it in `docs/resize-canvas-spec.md`.
@@ -66,11 +74,25 @@ Pure functions for the dialogs: percent to pixels, aspect-locked partner values,
 away from zero), and limits (1 to 262,144 px per side). Width and height are kept as doubles and
 rounded only when read as pixels, which keeps the aspect lock from drifting.
 
+## Dialog state: `SizeEditorState`
+
+The Resize and Canvas Size dialogs share one value type that keeps pixel size, print size,
+resolution, unit and percentage consistent (editing one updates the others, with the aspect
+lock and Paint.NET's rules). It lives in the engine so the rules are unit-tested; the SwiftUI
+dialogs only bind fields to it (`SizeFields.swift`).
+
+## Selection: `SelectionMask` and `MagicWand`
+
+A selection is one flag per pixel. `MagicWand.select` does a flood fill (4-way) or a global
+match against the clicked pixel, using premultiplied RGBA distance scaled by a 0 to 100%
+tolerance. See [selection-and-wand.md](selection-and-wand.md).
+
 ## The app
 
-- `AppModel` holds the current image, undo/redo, and busy state. Edits run on a background
+- `AppModel` holds the current image, its resolution, the selection and wand settings, undo/redo,
+  and busy state. Edits run on a background
   task through one helper (`edit`), then swap in the result as a single undo step.
-- Undo stores whole-image snapshots (up to 20). That's simple and robust, but a large photo costs
+- Undo stores whole-image snapshots, with their resolution (up to 20). That's simple and robust, but a large photo costs
   about 4 bytes per pixel per step, so a 12-megapixel image uses roughly 48 MB per step.
 - `ResizeSheet` and `CanvasSizeSheet` are the dialogs. Both keep width and height as doubles and
   route edits through bindings that apply the aspect lock.

@@ -5,17 +5,21 @@ classic Windows editors like Paint.NET: **Resize**, **Canvas Size** and **Backgr
 
 Native Swift and SwiftUI. No cloud, no account: your images never leave your Mac.
 
-> **Status: early (v0.1).** The three core tools work and are tested, but many features
-> are still missing. See the [roadmap](docs/roadmap.md).
+> **Status: early (v0.1).** The core tools work and are tested, but this is not a full editor
+> yet. See the [roadmap](docs/roadmap.md).
 
 ## Features
 
-- **Resize** by percentage or exact pixels, with an aspect-ratio lock.
-  Resampling: Bicubic (Catmull-Rom), Bicubic (Smooth), Bilinear, Lanczos, Nearest Neighbor.
+- **Resize** by percentage or exact pixels, with an aspect-ratio lock and **print size and
+  resolution** (inches or centimeters; the DPI is saved with the file).
+  Eight resampling methods: Bicubic (Catmull-Rom), Bicubic (Smooth), Bilinear, Bilinear (Low
+  Quality), Adaptive (Sharp), Lanczos, Fant and Nearest Neighbor.
   Optional gamma-correct (linear-light) resizing, which keeps brightness right when shrinking.
 - **Canvas Size** with a 3x3 anchor grid and a fill of Transparent, White, Black or any color.
   Growing adds space; shrinking crops.
 - **Remove Background** in one click, using Apple's on-device Vision framework.
+- **Magic Wand** with adjustable tolerance, flood or global mode, add and subtract, invert,
+  expand and contract, and Delete. See [docs/selection-and-wand.md](docs/selection-and-wand.md).
 - Open and save PNG, JPEG, TIFF and HEIC. Undo and redo. Zoom, fit-to-window and drag-and-drop.
 
 ## Requirements
@@ -26,7 +30,7 @@ Native Swift and SwiftUI. No cloud, no account: your images never leave your Mac
 ## Build and run
 
 ```bash
-git clone https://github.com/<your-account>/Pixelwright.git
+git clone https://github.com/architpoddar/Pixelwright.git
 cd Pixelwright
 
 ./scripts/make-app.sh      # builds build/Pixelwright.app

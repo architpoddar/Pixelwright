@@ -61,10 +61,25 @@ library (`PhotoSauce.MagicScaler.dll` ships with the app). Pixels are processed 
 | Bicubic (Smooth) | Cubic with **B=1, C=0** (cubic B-spline): smooth, no overshoot or sharpening | High |
 | Bilinear | Triangle (linear) kernel, area-aware when shrinking | High |
 | Lanczos | Lanczos with **3 lobes** | High |
-| Adaptive (Sharp) | A "Magic Kernel Sharp" variant (Paint.NET defines Magic Kernel, Sharp 2013, Sharp 2021). Exact variant not pinned down | Medium |
-| Bilinear (Low Quality) | Simple fixed-tap bilinear, not area-aware. Custom scaler | Medium |
-| Fant | Averaging (area-based) downscale. Custom scaler | Medium |
+| Adaptive (Sharp) | **Chosen from the scale factor** by MagicScaler's automatic rule (below). Not a Magic Kernel variant, despite those classes existing in the app | High |
+| Bilinear (Low Quality) | Plain **2-tap bilinear**: source position = (x + 0.5) / scale - 0.5, clamped at the edges, with no widening when shrinking (so it skips pixels on big reductions) | High |
+| Fant | **Exact area averaging**: each output pixel is the area-weighted mean of the source pixels its footprint covers. Windows' native Fant scaler has no readable code, so this follows the published algorithm; enlargements may differ slightly | Medium |
 | Nearest Neighbor | Point sampling, no gamma step | High |
+
+**Adaptive (Sharp) rule.** With `ratio` = the smaller of (new width / old width) and
+(new height / old height):
+
+| ratio | Kernel |
+|---|---|
+| exactly 1 | Bilinear (triangle) |
+| below 0.5 (shrinking by more than half) | Lanczos, 3 lobes |
+| 0.5 to 4 | Spline36 |
+| above 4, up to 16 | Catmull-Rom |
+| above 16 | Interpolating quadratic (1 at 0, 0 at integers, 1/2 at half steps) |
+
+Spline36 is the standard three-piece cubic over |x| < 3 (used in Panorama Tools and
+ImageMagick); `Sources/PixelwrightCore/ResamplingKernel.swift` has the formula, and the
+tests check that it passes through zero at integers and sums to 1.
 
 Notes:
 
@@ -73,11 +88,27 @@ Notes:
 - **Gamma correction on** means resampling is done in **linear light**; **off** means
   it runs directly on sRGB-encoded values. (Confirmed: the two modes are named Linear
   and Companded, and the checkbox maps to Linear when ticked.)
+- **Edges replicate:** kernel weights that fall outside the image are added to the nearest
+  edge pixel, so every output pixel's weights still sum to 1. (Not "drop and renormalize".)
 - Alpha is handled by premultiplying before filtering and un-premultiplying after.
 - The document's color profile is passed into the scaler, so the work is color managed.
 - Removed from earlier versions: Super Sampling (still present as a dead enum value).
 
-### 1.4 What the action does to the document
+### 1.4 Print size and resolution
+
+Print size and resolution are part of the Resize and Canvas Size dialogs and are saved with
+the image (pixels per inch or per centimeter).
+
+- The dialog keeps **print size** (in the chosen unit) as the stored value and derives
+  pixels = print size x resolution, rounded only when read as pixels.
+- Editing a pixel size updates the print size; editing a print size updates the pixel size.
+- **Changing the resolution keeps the print size**, so the pixel size changes (96 to 192 DPI
+  doubles the pixels).
+- Switching units keeps both the pixel size and the physical size.
+- Images that don't store a resolution are treated as 96 pixels per inch.
+- If only the resolution or unit changes, the pixels are untouched and only the metadata changes.
+
+### 1.5 What the action does to the document
 
 - Resizes **every layer** with the same settings, producing new layers with the
   original layer properties (name, opacity, blend mode, visibility) copied over.
@@ -165,10 +196,15 @@ So there is nothing to port; this is our own design for the Mac:
 
 ## 5. Open questions
 
-1. Exact Magic Kernel variant behind Adaptive (Sharp), and exact definitions of Fant and Bilinear (Low Quality).
+Resolved since the first draft: the kernel behind Adaptive (Sharp), the definition of
+Bilinear (Low Quality), edge handling, and print size and resolution. Still open:
+
+1. Windows' native Fant scaler, which has no readable code. We implement the published
+   area-averaging algorithm; compare results if a Windows reference becomes available.
 2. Percentage field limits.
 3. Real default anchor in the Canvas Size dialog.
-4. Whether Resize preserves the selection or resets it (only the history entry was seen).
+4. Whether Resize preserves the selection or resets it (only the history entry was seen;
+   Pixelwright resets it).
 5. Color-management details (how non-sRGB profiles convert in and out).
 
 ## 6. Provenance
@@ -177,6 +213,9 @@ So there is nothing to port; this is our own design for the Mac:
   GitHub releases. SHA-256 `d5ae7043f2fb9d365b48dfe243a2aca1c74924de99b04b6445916c95354aefa3`.
 - REA 6.5.0 static .NET analysis read `PaintDotNet.Core.dll` and
   `PaintDotNet.Windows.Core.dll` (resampling modes, scaler plumbing, kernel setup).
+- MagicScaler's own library code (`PhotoSauce.MagicScaler.dll`, shipped with the app) was read
+  the same way for its default-interpolation rule, the Spline36 and Quadratic kernels, and its
+  edge handling.
 - The main app assembly `paintdotnet.dll` (about 19 MB of metadata) exceeds REA's
   64 MiB metadata budget, so the dialog and action logic was read with a small local
   tool built on .NET's `System.Reflection.Metadata`. Labels came from the app's English

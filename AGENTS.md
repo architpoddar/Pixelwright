@@ -33,6 +33,7 @@ Always run `swift test` before finishing a change. The suite takes about a secon
 - `docs/resize-canvas-spec.md`: the behavior spec for Resize and Canvas Size. Treat it as the
   source of truth; the tests encode it.
 - `docs/architecture.md`: how the pieces fit. `docs/roadmap.md`: what's next.
+  `docs/selection-and-wand.md`: the Magic Wand and selection design.
 - `Samples/`: small test images. `scripts/`: build helpers.
 
 ## Rules that matter
@@ -59,10 +60,14 @@ Always run `swift test` before finishing a change. The suite takes about a secon
   builds in Swift 6 with strict concurrency. Keep engine types `Sendable`.
 - Debug builds are much slower than release for big images. For performance checks use
   `swift test -c release` or `./scripts/make-app.sh release`.
-- Background removal needs macOS 14+ and a real foreground subject. Flat or synthetic images can
-  return "No foreground subject was found", which is expected, not a bug.
+- Background removal needs macOS 14+ and a real foreground subject. Flat, synthetic or very wispy
+  images (a dandelion, say) can return "No foreground subject was found", which is expected, not a
+  bug. The Magic Wand is the fallback.
 - If a SwiftUI sheet field won't take typed input during UI automation, click it first; it has to
-  hold keyboard focus.
+  hold keyboard focus. Fields inside the scrolling part of a dialog can be stubborn; the engine
+  logic behind them is covered by unit tests (`SizeEditorStateTests`).
+- A SwiftUI sheet can't be taller than its window. The Resize and Canvas Size dialogs scroll with
+  pinned buttons for this reason; keep new dialogs the same way.
 
 ## Testing notes
 
@@ -70,10 +75,13 @@ Always run `swift test` before finishing a change. The suite takes about a secon
 - Colors are compared with a tolerance of 1 where resampling rounds. Gamma-correct averages
   of black and white should land near 188; without gamma correction near 128.
 - To check the real app, build with `./scripts/make-app.sh debug`, open `Samples/disc.png`, and try
-  Image menu items: Resize… (⌘R), Canvas Size… (⇧⌘R), Remove Background (⇧⌘B).
+  Image menu items: Resize… (⌘R), Canvas Size… (⇧⌘R), Remove Background (⇧⌘B). Magic Wand is
+  ⇧⌘W (Select menu).
+- Use your own photos for testing background removal. Don't commit third-party photos to `Samples/`.
 
 ## Known gaps
 
-Not implemented yet: Fant, Bilinear (Low Quality) and Adaptive (Sharp) resampling; DPI and print
-size in the dialogs; Magic Wand; layers. Open questions are listed in section 5 of
-`docs/resize-canvas-spec.md`.
+Not implemented yet: rectangle and lasso selection, feathered edges, crop, clipboard, layers.
+Open questions about Paint.NET behavior are in section 5 of `docs/resize-canvas-spec.md`.
+Fant follows the published area-averaging algorithm; Windows' own scaler isn't readable, so
+enlargements may differ slightly from Paint.NET.
