@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" fill="none">
+  <!-- Pixelwright macOS App Icon Master (1024 x 1024) -->
+  <defs>
+    <!-- macOS Drop Shadow -->
+    <filter id="tileShadow" x="0%" y="0%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="24" stdDeviation="32" flood-color="#000000" flood-opacity="0.45"/>
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#000000" flood-opacity="0.30"/>
+    </filter>
+
+    <!-- Glyph Drop Shadow -->
+    <filter id="glyphShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000000" flood-opacity="0.40"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+
+    <!-- Slate Machined Surface Gradient -->
+    <linearGradient id="tileGradient" x1="512" y1="100" x2="512" y2="924" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1E2638"/>
+      <stop offset="40%" stop-color="#141926"/>
+      <stop offset="100%" stop-color="#0B0E14"/>
+    </linearGradient>
+
+    <!-- Subtle Radial Ambient Light on Slate Tile -->
+    <radialGradient id="tileLight" cx="512" cy="300" r="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Inner Specular Rim Highlight -->
+    <linearGradient id="rimHighlight" x1="512" y1="100" x2="512" y2="924" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="15%" stop-color="#FFFFFF" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Glyph Titanium Gradient -->
+    <linearGradient id="glyphGrad" x1="50" y1="14" x2="50" y2="86" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="60%" stop-color="#F1F5F9"/>
+      <stop offset="100%" stop-color="#E2E8F0"/>
+    </linearGradient>
+
+    <!-- Cobalt Pip Radial Luminance -->
+    <radialGradient id="pipGrad" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="60%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Base Squircle with Shadow (824 x 824 inside 1024 x 1024, radius 185.4) -->
+  <rect x="100" y="100" width="824" height="824" rx="185.4" fill="url(#tileGradient)" filter="url(#tileShadow)"/>
+  <rect x="100" y="100" width="824" height="824" rx="185.4" fill="url(#tileLight)"/>
+  <rect x="100.75" y="100.75" width="822.5" height="822.5" rx="184.65" stroke="url(#rimHighlight)" stroke-width="1.5"/>
+
+  <!-- Precision Foreground Symbol -->
+  <g transform="translate(137, 137) scale(7.5)" filter="url(#glyphShadow)">
+    <path fill-rule="evenodd" clip-rule="evenodd" d="
+      M 24,14
+      L 60,14
+      A 20,20 0 0 1 80,34
+      A 20,20 0 0 1 60,54
+      L 36,54
+      L 36,82
+      A 4,4 0 0 1 32,86
+      L 24,86
+      A 4,4 0 0 1 20,82
+      L 20,18
+      A 4,4 0 0 1 24,14
+      Z
+      M 38.5,23
+      L 55.5,23
+      A 2.5,2.5 0 0 1 58,25.5
+      L 58,42.5
+      A 2.5,2.5 0 0 1 55.5,45
+      L 38.5,45
+      A 2.5,2.5 0 0 1 36,42.5
+      L 36,25.5
+      A 2.5,2.5 0 0 1 38.5,23
+      Z"
+      fill="url(#glyphGrad)"/>
+
+    <!-- Focal Cobalt Pip -->
+    <rect x="44" y="31" width="6" height="6" rx="1.5" fill="url(#pipGrad)"/>
+  </g>
+</svg>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" fill="none">
+  <!-- Apple Icon Composer - Background Layer (1024 x 1024) -->
+  <defs>
+    <linearGradient id="tileGradient" x1="512" y1="100" x2="512" y2="924" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1E2638"/>
+      <stop offset="40%" stop-color="#141926"/>
+      <stop offset="100%" stop-color="#0B0E14"/>
+    </linearGradient>
+    <radialGradient id="tileLight" cx="512" cy="300" r="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rimHighlight" x1="512" y1="100" x2="512" y2="924" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="15%" stop-color="#FFFFFF" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="100" y="100" width="824" height="824" rx="185.4" fill="url(#tileGradient)"/>
+  <rect x="100" y="100" width="824" height="824" rx="185.4" fill="url(#tileLight)"/>
+  <rect x="100.75" y="100.75" width="822.5" height="822.5" rx="184.65" stroke="url(#rimHighlight)" stroke-width="1.5"/>
+</svg>

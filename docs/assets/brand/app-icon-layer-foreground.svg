@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" fill="none">
+  <!-- Apple Icon Composer - Foreground Layer (1024 x 1024) -->
+  <defs>
+    <linearGradient id="glyphGrad" x1="50" y1="14" x2="50" y2="86" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="60%" stop-color="#F1F5F9"/>
+      <stop offset="100%" stop-color="#E2E8F0"/>
+    </linearGradient>
+    <radialGradient id="pipGrad" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="60%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </radialGradient>
+  </defs>
+
+  <g transform="translate(137, 137) scale(7.5)">
+    <path fill-rule="evenodd" clip-rule="evenodd" d="
+      M 24,14
+      L 60,14
+      A 20,20 0 0 1 80,34
+      A 20,20 0 0 1 60,54
+      L 36,54
+      L 36,82
+      A 4,4 0 0 1 32,86
+      L 24,86
+      A 4,4 0 0 1 20,82
+      L 20,18
+      A 4,4 0 0 1 24,14
+      Z
+      M 38.5,23
+      L 55.5,23
+      A 2.5,2.5 0 0 1 58,25.5
+      L 58,42.5
+      A 2.5,2.5 0 0 1 55.5,45
+      L 38.5,45
+      A 2.5,2.5 0 0 1 36,42.5
+      L 36,25.5
+      A 2.5,2.5 0 0 1 38.5,23
+      Z"
+      fill="url(#glyphGrad)"/>
+
+    <rect x="44" y="31" width="6" height="6" rx="1.5" fill="url(#pipGrad)"/>
+  </g>
+</svg>

@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 160" width="200" height="160" fill="none">
+  <!-- Pixelwright Stacked Lockup (Dark Backgrounds) -->
+  <g transform="translate(65, 10) scale(0.7)">
+    <path fill-rule="evenodd" clip-rule="evenodd" d="
+      M 24,14
+      L 60,14
+      A 20,20 0 0 1 80,34
+      A 20,20 0 0 1 60,54
+      L 36,54
+      L 36,82
+      A 4,4 0 0 1 32,86
+      L 24,86
+      A 4,4 0 0 1 20,82
+      L 20,18
+      A 4,4 0 0 1 24,14
+      Z
+      M 38.5,23
+      L 55.5,23
+      A 2.5,2.5 0 0 1 58,25.5
+      L 58,42.5
+      A 2.5,2.5 0 0 1 55.5,45
+      L 38.5,45
+      A 2.5,2.5 0 0 1 36,42.5
+      L 36,25.5
+      A 2.5,2.5 0 0 1 38.5,23
+      Z"
+      fill="#F8FAFC"/>
+    <rect x="44" y="31" width="6" height="6" rx="1.5" fill="#3B82F6"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="100" y="112"
+        text-anchor="middle"
+        font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Geist', sans-serif"
+        font-size="24"
+        font-weight="600"
+        letter-spacing="-0.02em"
+        fill="#F8FAFC">Pixelwright</text>
+
+  <!-- Tagline -->
+  <text x="100" y="134"
+        text-anchor="middle"
+        font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Geist', sans-serif"
+        font-size="11"
+        font-weight="400"
+        letter-spacing="0.04em"
+        fill="#8B949E">QUIETLY PRECISE · STRICTLY PRIVATE</text>
+</svg>

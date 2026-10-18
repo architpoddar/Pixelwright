@@ -1,36 +1,38 @@
 import SwiftUI
 
-/// Pixelwright's identity: name, tagline, colors and the pixel "P" mark.
+/// Pixelwright's identity: name, tagline, colors and the precision "P" mark.
 /// The same artwork is generated for the app icon by `scripts/make-icon.swift`; keep them in sync.
 enum Brand {
     static let name = "Pixelwright"
     static let tagline = "Craft your pixels."
+    static let descriptor = "The private, focused image editor for Mac."
     static let repositoryURL = URL(string: "https://github.com/architpoddar/Pixelwright")!
     static let licenseName = "MIT License"
 
-    static let indigo = Color(red: 0x43 / 255, green: 0x38 / 255, blue: 0xFF / 255)
-    static let violet = Color(red: 0x7B / 255, green: 0x3F / 255, blue: 0xF2 / 255)
-    static let coral = Color(red: 0xFF / 255, green: 0x6B / 255, blue: 0x57 / 255)
-    static let spark = Color(red: 0xFF / 255, green: 0xD2 / 255, blue: 0x3F / 255)
+    // Base Neutrals
+    static let obsidian = Color(red: 0x0B / 255, green: 0x0E / 255, blue: 0x14 / 255)
+    static let darkSlate = Color(red: 0x1E / 255, green: 0x26 / 255, blue: 0x38 / 255)
+    static let titanium = Color(red: 0xF8 / 255, green: 0xFA / 255, blue: 0xFC / 255)
+    static let titaniumShade = Color(red: 0xE2 / 255, green: 0xE8 / 255, blue: 0xF0 / 255)
 
-    /// The signature indigo-to-coral diagonal gradient.
+    // Confident Accents
+    static let cobalt = Color(red: 0x3B / 255, green: 0x82 / 255, blue: 0xF6 / 255)
+    static let cobaltDeep = Color(red: 0x1D / 255, green: 0x4E / 255, blue: 0xD8 / 255)
+    static let selection = Color(red: 0x0E / 255, green: 0xA5 / 255, blue: 0xE9 / 255)
+
+    // Backward-compatible color aliases
+    static let indigo = darkSlate
+    static let violet = cobalt
+    static let coral = selection
+    static let spark = cobalt
+
+    /// The signature dark slate machined gradient.
     static let gradient = LinearGradient(
-        stops: [.init(color: indigo, location: 0), .init(color: violet, location: 0.5), .init(color: coral, location: 1)],
-        startPoint: .topLeading, endPoint: .bottomTrailing)
+        stops: [.init(color: darkSlate, location: 0), .init(color: obsidian, location: 1)],
+        startPoint: .top, endPoint: .bottom)
 
-    /// The color used for buttons, selections and highlights across the app.
-    static let accent = violet
-
-    /// 5 x 7 pixel "P". `S` marks the single spark pixel.
-    fileprivate static let pattern = [
-        "XXXX.",
-        "X...S",
-        "X...X",
-        "XXXX.",
-        "X....",
-        "X....",
-        "X....",
-    ]
+    /// The color used for buttons, active controls and primary highlights across the app.
+    static let accent = cobalt
 
     static var versionString: String {
         let info = Bundle.main.infoDictionary
@@ -39,7 +41,82 @@ enum Brand {
     }
 }
 
-/// The app icon's tile: gradient squircle with the pixel P. Scales to any size.
+/// The sculptural ribbon P glyph.
+struct RibbonPGlyph: View {
+    var size: CGFloat = 36
+
+    var body: some View {
+        let scale = size / 60.0
+        Canvas { context, canvasSize in
+            let originX = (canvasSize.width - 60.0 * scale) / 2
+            let originY = (canvasSize.height - 74.0 * scale) / 2
+
+            var path = Path()
+            path.move(to: CGPoint(x: (34 - 26) * scale, y: (16 - 16) * scale))
+            path.addCurve(
+                to: CGPoint(x: (76 - 26) * scale, y: (26 - 16) * scale),
+                control1: CGPoint(x: (48 - 26) * scale, y: (16 - 16) * scale),
+                control2: CGPoint(x: (66 - 26) * scale, y: (16 - 16) * scale))
+            path.addCurve(
+                to: CGPoint(x: (76 - 26) * scale, y: (58 - 16) * scale),
+                control1: CGPoint(x: (86 - 26) * scale, y: (36 - 16) * scale),
+                control2: CGPoint(x: (86 - 26) * scale, y: (48 - 16) * scale))
+            path.addCurve(
+                to: CGPoint(x: (42 - 26) * scale, y: (66 - 16) * scale),
+                control1: CGPoint(x: (66 - 26) * scale, y: (66 - 16) * scale),
+                control2: CGPoint(x: (52 - 26) * scale, y: (66 - 16) * scale))
+            path.addLine(to: CGPoint(x: (42 - 26) * scale, y: (82 - 16) * scale))
+            path.addCurve(
+                to: CGPoint(x: (34 - 26) * scale, y: (90 - 16) * scale),
+                control1: CGPoint(x: (42 - 26) * scale, y: (86.4 - 16) * scale),
+                control2: CGPoint(x: (38.4 - 26) * scale, y: (90 - 16) * scale))
+            path.addCurve(
+                to: CGPoint(x: (26 - 26) * scale, y: (82 - 16) * scale),
+                control1: CGPoint(x: (29.6 - 26) * scale, y: (90 - 16) * scale),
+                control2: CGPoint(x: (26 - 26) * scale, y: (86.4 - 16) * scale))
+            path.addLine(to: CGPoint(x: (26 - 26) * scale, y: (24 - 16) * scale))
+            path.addCurve(
+                to: CGPoint(x: (34 - 26) * scale, y: (16 - 16) * scale),
+                control1: CGPoint(x: (26 - 26) * scale, y: (19.6 - 16) * scale),
+                control2: CGPoint(x: (29.6 - 26) * scale, y: (16 - 16) * scale))
+            path.closeSubpath()
+
+            // Inner counter loop
+            var inner = Path()
+            inner.move(to: CGPoint(x: (42 - 26) * scale, y: (30 - 16) * scale))
+            inner.addLine(to: CGPoint(x: (42 - 26) * scale, y: (52 - 16) * scale))
+            inner.addCurve(
+                to: CGPoint(x: (66 - 26) * scale, y: (46 - 16) * scale),
+                control1: CGPoint(x: (48 - 26) * scale, y: (52 - 16) * scale),
+                control2: CGPoint(x: (60 - 26) * scale, y: (52 - 16) * scale))
+            inner.addCurve(
+                to: CGPoint(x: (66 - 26) * scale, y: (26 - 16) * scale),
+                control1: CGPoint(x: (72 - 26) * scale, y: (40 - 16) * scale),
+                control2: CGPoint(x: (72 - 26) * scale, y: (32 - 16) * scale))
+            inner.addCurve(
+                to: CGPoint(x: (42 - 26) * scale, y: (30 - 16) * scale),
+                control1: CGPoint(x: (60 - 26) * scale, y: (20 - 16) * scale),
+                control2: CGPoint(x: (48 - 26) * scale, y: (20 - 16) * scale))
+            inner.closeSubpath()
+
+            context.translateBy(x: originX, y: originY)
+            var combined = Path()
+            combined.addPath(path)
+            combined.addPath(inner)
+
+            context.fill(
+                combined,
+                with: .linearGradient(
+                    Gradient(colors: [Brand.titanium, Brand.titaniumShade]),
+                    startPoint: CGPoint(x: 15 * scale, y: 0),
+                    endPoint: CGPoint(x: 45 * scale, y: 74 * scale)
+                ), style: FillStyle(eoFill: true))
+        }
+        .frame(width: size, height: size * (74.0 / 60.0))
+    }
+}
+
+/// The app icon's tile: dark machined squircle with the sculptural ribbon P. Scales to any size.
 struct BrandMark: View {
     var size: CGFloat = 64
 
@@ -47,41 +124,26 @@ struct BrandMark: View {
         ZStack {
             RoundedRectangle(cornerRadius: size * 0.225, style: .continuous)
                 .fill(Brand.gradient)
-            PixelP(cell: size * 0.0947)
+                .overlay(
+                    RoundedRectangle(cornerRadius: size * 0.225, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.14), lineWidth: 1)
+                )
+            RibbonPGlyph(size: size * 0.52)
         }
         .frame(width: size, height: size)
-        .shadow(color: .black.opacity(0.25), radius: size * 0.06, y: size * 0.03)
+        .shadow(color: .black.opacity(0.28), radius: size * 0.05, y: size * 0.025)
     }
 }
 
-/// The P itself, drawn from a grid of rounded pixels.
-private struct PixelP: View {
-    let cell: CGFloat
-
-    var body: some View {
-        let gap = cell * 0.13
-        VStack(spacing: gap) {
-            ForEach(Array(Brand.pattern.enumerated()), id: \.offset) { _, row in
-                HStack(spacing: gap) {
-                    ForEach(Array(row.enumerated()), id: \.offset) { _, ch in
-                        RoundedRectangle(cornerRadius: cell * 0.2, style: .continuous)
-                            .fill(ch == "S" ? Brand.spark : Color.white)
-                            .frame(width: cell, height: cell)
-                            .opacity(ch == "." ? 0 : 1)
-                    }
-                }
-            }
-        }
-    }
-}
-
-/// "Pixel" in a light weight, "wright" in a heavy coral weight.
+/// Confident, crafted wordmark.
 struct Wordmark: View {
     var size: CGFloat = 28
 
     var body: some View {
-        (Text("Pixel").font(.system(size: size, weight: .light))
-            + Text("wright").font(.system(size: size, weight: .heavy)).foregroundColor(Brand.coral))
+        Text(Brand.name)
+            .font(.system(size: size, weight: .semibold, design: .default))
+            .tracking(-size * 0.025)
+            .foregroundColor(.primary)
             .accessibilityLabel(Brand.name)
     }
 }
@@ -89,9 +151,9 @@ struct Wordmark: View {
 /// A compact brand chip for the toolbar: mark and name.
 struct BrandChip: View {
     var body: some View {
-        HStack(spacing: 6) {
-            BrandMark(size: 22)
-            Wordmark(size: 15)
+        HStack(spacing: 7) {
+            BrandMark(size: 20)
+            Wordmark(size: 14)
         }
         .padding(.horizontal, 4)
         .help("\(Brand.name): \(Brand.tagline)")
@@ -103,14 +165,14 @@ struct WelcomeView: View {
     @EnvironmentObject var model: AppModel
 
     var body: some View {
-        VStack(spacing: 18) {
-            BrandMark(size: 128)
-            Wordmark(size: 44)
+        VStack(spacing: 16) {
+            BrandMark(size: 112)
+            Wordmark(size: 38)
             Text(Brand.tagline)
                 .font(.title3)
                 .foregroundStyle(.secondary)
 
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 Button {
                     model.openWithPanel()
                 } label: {
@@ -131,16 +193,19 @@ struct WelcomeView: View {
                 .controlSize(.large)
                 .help("Start from an image you copied (⌘V)")
             }
-            .padding(.top, 6)
+            .padding(.top, 8)
 
             Text("or drop an image anywhere in this window")
                 .font(.callout)
                 .foregroundStyle(.tertiary)
 
-            Label("Your original files are never changed. Saving always makes a copy.", systemImage: "lock.shield")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .padding(.top, 12)
+            VStack(spacing: 4) {
+                Label("100% on-device. No servers, no accounts, and no uploads.", systemImage: "network.slash")
+                Label("Your original files are never changed. Saving always makes a copy.", systemImage: "lock.shield")
+            }
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .padding(.top, 14)
         }
         .padding(40)
     }
@@ -149,15 +214,17 @@ struct WelcomeView: View {
 /// The About window.
 struct AboutView: View {
     var body: some View {
-        VStack(spacing: 12) {
-            BrandMark(size: 112)
-            Wordmark(size: 36)
-            Text(Brand.tagline).foregroundStyle(.secondary)
+        VStack(spacing: 14) {
+            BrandMark(size: 96)
+            Wordmark(size: 30)
+            Text(Brand.tagline)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
             Text(Brand.versionString)
                 .font(.callout)
                 .foregroundStyle(.tertiary)
             Divider().padding(.vertical, 4)
-            Text("A free, open-source image editor for Mac.\nYour images never leave your computer,\nand your original files are never changed.")
+            Text("The private, focused image editor for Mac.\nYour images never leave your computer,\nand your original files are never changed.")
                 .multilineTextAlignment(.center)
                 .font(.callout)
             Link("github.com/architpoddar/Pixelwright", destination: Brand.repositoryURL)
@@ -205,7 +272,7 @@ struct ShortcutsView: View {
                 Text("Keyboard Shortcuts").font(.title2.bold())
                 ForEach(groups) { group in
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(group.id).font(.headline).foregroundStyle(Brand.violet)
+                        Text(group.id).font(.headline).foregroundStyle(Brand.accent)
                         ForEach(Array(group.rows.enumerated()), id: \.offset) { _, row in
                             HStack {
                                 Text(row.0)

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" fill="none">
+  <!-- Apple Icon Composer - Shadow Layer (1024 x 1024) -->
+  <defs>
+    <filter id="pureShadow" x="0%" y="0%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="24" stdDeviation="32" flood-color="#000000" flood-opacity="0.45"/>
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#000000" flood-opacity="0.30"/>
+    </filter>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="185.4" fill="#000000" filter="url(#pureShadow)"/>
+</svg>

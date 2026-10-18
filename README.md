@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="docs/assets/logo.png" width="128" alt="Pixelwright logo: a pixel-art letter P on an indigo-to-coral gradient">
+  <img src="docs/assets/logo.png" width="128" alt="Pixelwright app icon: architectural titanium P with precision cobalt calibration pip">
 </p>
 
 <h1 align="center">Pixelwright</h1>
 
 <p align="center"><b>Craft your pixels.</b><br>
-A free, open-source image editor for Mac. Resize, crop, cut out backgrounds and tidy up photos<br>
+The private, focused image editor for Mac. Resize, crop, cut out backgrounds and tidy up photos<br>
 without the bloat. <b>Everything stays on your Mac: no servers, no accounts, no uploads.</b></p>
 
 <p align="center">

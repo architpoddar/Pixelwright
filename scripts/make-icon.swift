@@ -4,28 +4,20 @@
 //   swift scripts/make-icon.swift            (run from the repository root)
 //
 // Writes Resources/AppIcon.icns, docs/assets/logo.png and docs/assets/social-preview.png.
-// The same pixel "P" is drawn in SwiftUI by Sources/Pixelwright/Brand.swift; keep them in sync.
+// Synchronized with Sources/Pixelwright/Brand.swift.
 import AppKit
 
-// MARK: Brand
+// MARK: Brand Colors
 
-let indigo = NSColor(srgbRed: 0x43 / 255, green: 0x38 / 255, blue: 0xFF / 255, alpha: 1)
-let violet = NSColor(srgbRed: 0x7B / 255, green: 0x3F / 255, blue: 0xF2 / 255, alpha: 1)
-let coral = NSColor(srgbRed: 0xFF / 255, green: 0x6B / 255, blue: 0x57 / 255, alpha: 1)
-let spark = NSColor(srgbRed: 0xFF / 255, green: 0xD2 / 255, blue: 0x3F / 255, alpha: 1)
+let obsidian = NSColor(srgbRed: 0x0B / 255, green: 0x0E / 255, blue: 0x14 / 255, alpha: 1)
+let darkSlate = NSColor(srgbRed: 0x1E / 255, green: 0x26 / 255, blue: 0x38 / 255, alpha: 1)
+let titanium = NSColor(srgbRed: 0xF8 / 255, green: 0xFA / 255, blue: 0xFC / 255, alpha: 1)
+let titaniumShade = NSColor(srgbRed: 0xE2 / 255, green: 0xE8 / 255, blue: 0xF0 / 255, alpha: 1)
+let cobalt = NSColor(srgbRed: 0x3B / 255, green: 0x82 / 255, blue: 0xF6 / 255, alpha: 1)
+let cobaltDeep = NSColor(srgbRed: 0x1D / 255, green: 0x4E / 255, blue: 0xD8 / 255, alpha: 1)
+let mutedSlate = NSColor(srgbRed: 0x8B / 255, green: 0x94 / 255, blue: 0x9E / 255, alpha: 1)
 
-/// 5 x 7 pixel "P". `S` marks the single spark pixel.
-let pattern = [
-    "XXXX.",
-    "X...S",
-    "X...X",
-    "XXXX.",
-    "X....",
-    "X....",
-    "X....",
-]
-
-// MARK: Drawing
+// MARK: Drawing Helpers
 
 func bitmap(_ w: Int, _ h: Int) -> NSBitmapImageRep {
     NSBitmapImageRep(
@@ -44,7 +36,72 @@ func writePNG(_ rep: NSBitmapImageRep, to path: String) {
     try! rep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: path))
 }
 
-/// The squircle tile with the pixel P, filling `rect`.
+/// Draws the architectural Precision P glyph and calibration pip.
+func drawPrecisionP(in rect: NSRect) {
+    guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+
+    let glyphW = rect.width * 0.58
+    let scale = glyphW / 60.0
+    let glyphH = 72.0 * scale
+    let originX = rect.midX - glyphW / 2
+    let originY = rect.midY - glyphH / 2
+
+    ctx.saveGState()
+    // Map to normalized 100x100 SVG space (y pointing down from top-left of glyph at 20, 14)
+    ctx.translateBy(x: originX, y: originY + glyphH)
+    ctx.scaleBy(x: scale, y: -scale)
+    ctx.translateBy(x: -20, y: -14)
+
+    // Outer and Inner contour of the P
+    let path = CGMutablePath()
+
+    // Outer contour
+    path.move(to: CGPoint(x: 24, y: 14))
+    path.addLine(to: CGPoint(x: 60, y: 14))
+    path.addArc(tangent1End: CGPoint(x: 80, y: 14), tangent2End: CGPoint(x: 80, y: 34), radius: 20)
+    path.addArc(tangent1End: CGPoint(x: 80, y: 54), tangent2End: CGPoint(x: 60, y: 54), radius: 20)
+    path.addLine(to: CGPoint(x: 36, y: 54))
+    path.addLine(to: CGPoint(x: 36, y: 82))
+    path.addArc(tangent1End: CGPoint(x: 36, y: 86), tangent2End: CGPoint(x: 32, y: 86), radius: 4)
+    path.addLine(to: CGPoint(x: 24, y: 86))
+    path.addArc(tangent1End: CGPoint(x: 20, y: 86), tangent2End: CGPoint(x: 20, y: 82), radius: 4)
+    path.addLine(to: CGPoint(x: 20, y: 18))
+    path.addArc(tangent1End: CGPoint(x: 20, y: 14), tangent2End: CGPoint(x: 24, y: 14), radius: 4)
+    path.closeSubpath()
+
+    // Inner counter (Square aperture with subtle rounded corners)
+    let counterRect = CGRect(x: 38.5, y: 23, width: 19.5, height: 22)
+    path.addRoundedRect(in: counterRect, cornerWidth: 2.5, cornerHeight: 2.5)
+
+    // Shadow under glyph
+    ctx.setShadow(offset: CGSize(width: 0, height: -2), blur: 3, color: NSColor.black.withAlphaComponent(0.35).cgColor)
+
+    // Fill glyph body with gradient
+    ctx.addPath(path)
+    ctx.clip(using: .evenOdd)
+
+    let colors = [titanium.cgColor, titaniumShade.cgColor] as CFArray
+    let colorSpace = CGColorSpaceCreateDeviceRGB()
+    if let gradient = CGGradient(colorsSpace: colorSpace, colors: colors, locations: [0.0, 1.0]) {
+        ctx.drawLinearGradient(gradient, start: CGPoint(x: 50, y: 14), end: CGPoint(x: 50, y: 86), options: [])
+    }
+    ctx.restoreGState()
+
+    // Focal Cobalt Calibration Pip
+    ctx.saveGState()
+    ctx.translateBy(x: originX, y: originY + glyphH)
+    ctx.scaleBy(x: scale, y: -scale)
+    ctx.translateBy(x: -20, y: -14)
+
+    let pipRect = CGRect(x: 44, y: 31, width: 6, height: 6)
+    let pipPath = CGPath(roundedRect: pipRect, cornerWidth: 1.5, cornerHeight: 1.5, transform: nil)
+    ctx.addPath(pipPath)
+    ctx.setFillColor(cobalt.cgColor)
+    ctx.fillPath()
+    ctx.restoreGState()
+}
+
+/// The squircle tile with the precision P, filling `rect`.
 func drawTile(in rect: NSRect, shadow: Bool) {
     let radius = rect.width * 0.225
     let tile = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
@@ -52,9 +109,9 @@ func drawTile(in rect: NSRect, shadow: Bool) {
     if shadow {
         NSGraphicsContext.saveGraphicsState()
         let s = NSShadow()
-        s.shadowColor = NSColor.black.withAlphaComponent(0.35)
-        s.shadowBlurRadius = rect.width * 0.03
-        s.shadowOffset = NSSize(width: 0, height: -rect.width * 0.015)
+        s.shadowColor = NSColor.black.withAlphaComponent(0.42)
+        s.shadowBlurRadius = rect.width * 0.04
+        s.shadowOffset = NSSize(width: 0, height: -rect.width * 0.02)
         s.set()
         NSColor.black.setFill()
         tile.fill()
@@ -63,42 +120,24 @@ func drawTile(in rect: NSRect, shadow: Bool) {
 
     NSGraphicsContext.saveGraphicsState()
     tile.addClip()
-    NSGradient(colors: [indigo, violet, coral], atLocations: [0, 0.5, 1], colorSpace: .sRGB)!
-        .draw(in: rect, angle: -50)
-    // Soft highlight across the top.
+    // Machined dark slate gradient: Dark Slate (top) to Obsidian (bottom)
+    NSGradient(colors: [darkSlate, obsidian], atLocations: [0, 1], colorSpace: .sRGB)!
+        .draw(in: rect, angle: -90)
+
+    // Soft top specular highlight rim
     NSGradient(colors: [NSColor.white.withAlphaComponent(0.18), NSColor.white.withAlphaComponent(0)])!
         .draw(in: NSRect(x: rect.minX, y: rect.midY, width: rect.width, height: rect.height / 2), angle: -90)
-    NSGraphicsContext.restoreGraphicsState()
 
-    // The P: 5 x 7 cells with small gaps, centered.
-    let cell = rect.width * 0.0947
-    let gap = cell * 0.13
-    let pitch = cell + gap
-    let totalW = pitch * 5 - gap, totalH = pitch * 7 - gap
-    let originX = rect.midX - totalW / 2
-    let topY = rect.midY + totalH / 2
-    for (row, line) in pattern.enumerated() {
-        for (col, ch) in line.enumerated() where ch != "." {
-            let r = NSRect(x: originX + CGFloat(col) * pitch, y: topY - CGFloat(row + 1) * pitch + gap, width: cell, height: cell)
-            let path = NSBezierPath(roundedRect: r, xRadius: cell * 0.2, yRadius: cell * 0.2)
-            NSGraphicsContext.saveGraphicsState()
-            let s = NSShadow()
-            s.shadowColor = NSColor.black.withAlphaComponent(0.25)
-            s.shadowBlurRadius = cell * 0.15
-            s.shadowOffset = NSSize(width: 0, height: -cell * 0.06)
-            s.set()
-            (ch == "S" ? spark : NSColor.white).setFill()
-            path.fill()
-            NSGraphicsContext.restoreGraphicsState()
-        }
-    }
+    // Precision P symbol
+    drawPrecisionP(in: rect)
+    NSGraphicsContext.restoreGraphicsState()
 }
 
 func iconImage(pixels: Int) -> NSBitmapImageRep {
     let rep = bitmap(pixels, pixels)
     withContext(rep) {
         let size = CGFloat(pixels)
-        let inset = size * 0.098  // macOS icon grid: the tile fills ~80% of the canvas
+        let inset = size * 0.098  // macOS icon grid: the tile fills ~80.4% of the canvas
         drawTile(in: NSRect(x: inset, y: inset, width: size - 2 * inset, height: size - 2 * inset), shadow: true)
     }
     return rep
@@ -137,31 +176,41 @@ iconutil.waitUntilExit()
 
 writePNG(resized(master, to: 512), to: "docs/assets/logo.png")
 
-// Social preview: 1280 x 640, the size GitHub recommends.
+// Social preview: 1280 x 640, GitHub recommended size.
 let social = bitmap(1280, 640)
 withContext(social) {
-    NSGradient(colors: [NSColor(srgbRed: 0x14 / 255, green: 0x10 / 255, blue: 0x3A / 255, alpha: 1),
-                        NSColor(srgbRed: 0x2A / 255, green: 0x14 / 255, blue: 0x58 / 255, alpha: 1)])!
+    // Deep slate background with ambient gradient
+    NSGradient(colors: [NSColor(srgbRed: 0x0B / 255, green: 0x0E / 255, blue: 0x14 / 255, alpha: 1),
+                        NSColor(srgbRed: 0x14 / 255, green: 0x19 / 255, blue: 0x26 / 255, alpha: 1)])!
         .draw(in: NSRect(x: 0, y: 0, width: 1280, height: 640), angle: -30)
+
+    // Left Icon Tile
     drawTile(in: NSRect(x: 110, y: 120, width: 400, height: 400), shadow: true)
 
-    let paragraph = NSMutableParagraphStyle()
-    paragraph.alignment = .left
-    let title = NSMutableAttributedString()
-    title.append(NSAttributedString(string: "Pixel", attributes: [
-        .font: NSFont.systemFont(ofSize: 112, weight: .light), .foregroundColor: NSColor.white]))
-    title.append(NSAttributedString(string: "wright", attributes: [
-        .font: NSFont.systemFont(ofSize: 112, weight: .heavy), .foregroundColor: coral]))
-    title.draw(at: NSPoint(x: 580, y: 340))
-    NSAttributedString(string: "Craft your pixels.", attributes: [
-        .font: NSFont.systemFont(ofSize: 48, weight: .medium),
-        .foregroundColor: NSColor.white.withAlphaComponent(0.85)]).draw(at: NSPoint(x: 586, y: 270))
-    NSAttributedString(string: "Resize · Canvas Size · Remove Background · Magic Wand", attributes: [
-        .font: NSFont.systemFont(ofSize: 25, weight: .regular),
-        .foregroundColor: NSColor.white.withAlphaComponent(0.6)]).draw(at: NSPoint(x: 586, y: 200))
-    NSAttributedString(string: "A free, open-source image editor for Mac", attributes: [
-        .font: NSFont.systemFont(ofSize: 30, weight: .regular),
-        .foregroundColor: spark]).draw(at: NSPoint(x: 586, y: 150))
+    // Right Typography
+    let title = NSAttributedString(string: "Pixelwright", attributes: [
+        .font: NSFont.systemFont(ofSize: 108, weight: .bold),
+        .foregroundColor: NSColor.white
+    ])
+    title.draw(at: NSPoint(x: 580, y: 350))
+
+    let tagline = NSAttributedString(string: "Craft your pixels.", attributes: [
+        .font: NSFont.systemFont(ofSize: 42, weight: .medium),
+        .foregroundColor: cobalt
+    ])
+    tagline.draw(at: NSPoint(x: 586, y: 280))
+
+    let subtitle = NSAttributedString(string: "The private, focused image editor for Mac", attributes: [
+        .font: NSFont.systemFont(ofSize: 26, weight: .regular),
+        .foregroundColor: NSColor.white.withAlphaComponent(0.85)
+    ])
+    subtitle.draw(at: NSPoint(x: 586, y: 225))
+
+    let features = NSAttributedString(string: "100% On-Device · Zero Cloud · Originals Untouched", attributes: [
+        .font: NSFont.systemFont(ofSize: 22, weight: .medium),
+        .foregroundColor: mutedSlate
+    ])
+    features.draw(at: NSPoint(x: 586, y: 170))
 }
 writePNG(social, to: "docs/assets/social-preview.png")
 print("Wrote Resources/AppIcon.icns, docs/assets/logo.png, docs/assets/social-preview.png")
