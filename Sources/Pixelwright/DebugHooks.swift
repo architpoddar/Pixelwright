@@ -38,7 +38,11 @@ enum DebugHooks {
             switch env["PIXELWRIGHT_DEBUG_TOOL"] {
             case "rect": model.tool = .rectangleSelect
             case "lasso": model.tool = .lasso
-            case "wand": model.tool = .magicWand
+            case "wand":
+                model.tool = .magicWand
+                if env["PIXELWRIGHT_DEBUG_WAND_CLICK"] != nil {
+                    model.wandClick(x: 480, y: 150, combine: .replace)
+                }
             default: break
             }
             if env["PIXELWRIGHT_DEBUG_SELECT_ALL"] != nil { model.selectAll() }
@@ -54,6 +58,21 @@ enum DebugHooks {
     }
 
     private static func snapshot(_ window: NSWindow, to path: String) {
+        typealias CGWindowListCreateImageFunc = @convention(c) (CGRect, UInt32, UInt32, UInt32) -> Unmanaged<CGImage>?
+        if let handle = dlopen("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics", RTLD_NOW),
+           let sym = dlsym(handle, "CGWindowListCreateImage") {
+            let fn = unsafeBitCast(sym, to: CGWindowListCreateImageFunc.self)
+            // kCGWindowListOptionIncludingWindow = 1, kCGWindowImageBoundsIgnoreFraming = 1
+            if let unmanaged = fn(.null, 1, UInt32(window.windowNumber), 1) {
+                let cgImage = unmanaged.takeRetainedValue()
+                let rep = NSBitmapImageRep(cgImage: cgImage)
+                if let data = rep.representation(using: .png, properties: [:]) {
+                    try? data.write(to: URL(fileURLWithPath: path))
+                    return
+                }
+            }
+        }
+
         guard let content = window.contentView else { return }
         let view = content.superview ?? content  // the frame view includes the title bar and toolbar
         guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }

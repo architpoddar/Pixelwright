@@ -5,7 +5,7 @@ import SwiftUI
 enum Brand {
     static let name = "Pixelwright"
     static let tagline = "Craft your pixels."
-    static let descriptor = "The private, focused image editor for Mac."
+    static let descriptor = "Fast, private image editor for Mac. Resize with 8 algorithms, crop, remove backgrounds, adjust colors, and batch export—100% on-device."
     static let repositoryURL = URL(string: "https://github.com/architpoddar/Pixelwright")!
     static let licenseName = "MIT License"
 
@@ -224,7 +224,7 @@ struct AboutView: View {
                 .font(.callout)
                 .foregroundStyle(.tertiary)
             Divider().padding(.vertical, 4)
-            Text("The private, focused image editor for Mac.\nYour images never leave your computer,\nand your original files are never changed.")
+            Text("Fast, private image editor for Mac.\nYour images never leave your computer,\nand your original files are never changed.")
                 .multilineTextAlignment(.center)
                 .font(.callout)
             Link("github.com/architpoddar/Pixelwright", destination: Brand.repositoryURL)

@@ -8,7 +8,7 @@ A concise guide for creating artwork, screenshots, marketing materials, and UI u
 
 - **Name:** **Pixelwright** (one word, capital P). A *wright* is a skilled maker (shipwright, playwright, wheelwright); a Pixelwright shapes and refines digital images with care.
 - **Tagline:** **Craft your pixels.**
-- **One-line Descriptor:** *The private, focused image editor for Mac.*
+- **One-line Descriptor:** *Fast, private image editor for Mac. Resize with 8 algorithms, crop, remove backgrounds, adjust colors, and batch export—100% on-device.*
 - **Personality:** Precise, calm, trustworthy, craftsmanlike. Built like a well-made instrument (comparable in seriousness to Things, Linear, or Apple's native utilities). No cartoon mascots, no retro game pixels, no hype.
 
 ---

@@ -5,15 +5,14 @@
 <h1 align="center">Pixelwright</h1>
 
 <p align="center"><b>Craft your pixels.</b><br>
-The private, focused image editor for Mac. Resize, crop, cut out backgrounds and tidy up photos<br>
-without the bloat. <b>Everything stays on your Mac: no servers, no accounts, no uploads.</b></p>
+Fast, private image editor for Mac. Resize with 8 algorithms, crop, remove backgrounds, adjust colors,<br>
+and batch export—without the bloat. <b>Everything stays on your Mac: no servers, no accounts, no uploads.</b></p>
 
 <p align="center">
   <img src="docs/assets/screenshot.jpg" width="720" alt="Pixelwright with a sunset image open and the sky selected with the Magic Wand">
 </p>
 
-> **Status: early (0.1).** The everyday tools work and are tested, but this isn't a full editor
-> yet. See the [roadmap](docs/roadmap.md).
+> **Status: early (0.1).** The everyday tools work and are tested.
 
 ## Private by design: your images never leave your Mac
 
