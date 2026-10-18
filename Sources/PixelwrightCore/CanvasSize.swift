@@ -2,6 +2,21 @@
 public enum AnchorEdge: Int, CaseIterable, Sendable {
     case topLeft = 0, top, topRight, left, middle, right, bottomLeft, bottom, bottomRight
 
+    /// For tooltips and accessibility: where the picture stays when the canvas changes.
+    public var displayName: String {
+        switch self {
+        case .topLeft: "Top left"
+        case .top: "Top"
+        case .topRight: "Top right"
+        case .left: "Left"
+        case .middle: "Center"
+        case .right: "Right"
+        case .bottomLeft: "Bottom left"
+        case .bottom: "Bottom"
+        case .bottomRight: "Bottom right"
+        }
+    }
+
     /// Offset of the old image inside the new canvas. Spec section 2.2: the middle offsets
     /// use integer division that truncates toward zero, which Swift's `/` does.
     func offset(oldWidth: Int, oldHeight: Int, newWidth: Int, newHeight: Int) -> (x: Int, y: Int) {

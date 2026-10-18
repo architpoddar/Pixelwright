@@ -24,6 +24,20 @@ public enum ResamplingMethod: CaseIterable, Sendable {
         }
     }
 
+    /// One plain-language line for the Resize dialog, so people can choose without knowing the jargon.
+    public var summary: String {
+        switch self {
+        case .bicubic: "Smooth and sharp. A good choice for most photos."
+        case .bicubicSmooth: "Softer, with no halos around edges."
+        case .bilinear: "Soft and quick. Blends neighboring pixels."
+        case .bilinearLowQuality: "Fastest, lowest quality. Can look rough when shrinking a lot."
+        case .adaptiveSharp: "Picks the best method for how much you shrink or enlarge."
+        case .lanczos: "Very sharp detail. Great for enlarging; may show slight halos."
+        case .fant: "Averages the area each new pixel covers. Clean when shrinking."
+        case .nearestNeighbor: "No smoothing: hard, blocky pixels. Best for pixel art."
+        }
+    }
+
     /// Gamma correction has no effect when no filtering happens.
     public var supportsGammaCorrection: Bool { self != .nearestNeighbor }
 

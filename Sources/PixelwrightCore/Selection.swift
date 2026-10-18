@@ -27,6 +27,18 @@ public struct SelectionMask: Equatable, Sendable {
     public var selectedCount: Int { flags.reduce(0) { $0 + ($1 ? 1 : 0) } }
     public var isEmpty: Bool { !flags.contains(true) }
 
+    /// The mask at a different size, by nearest-pixel sampling (used for previews on shrunk copies).
+    public func resized(width newWidth: Int, height newHeight: Int) -> SelectionMask {
+        var out = SelectionMask(width: newWidth, height: newHeight)
+        for y in 0..<newHeight {
+            let sy = min(height - 1, y * height / newHeight)
+            for x in 0..<newWidth {
+                out.flags[y * newWidth + x] = flags[sy * width + min(width - 1, x * width / newWidth)]
+            }
+        }
+        return out
+    }
+
     public func inverted() -> SelectionMask {
         SelectionMask(width: width, height: height, flags: flags.map { !$0 })
     }
@@ -62,17 +74,64 @@ public struct SelectionMask: Equatable, Sendable {
     }
 }
 
+extension SelectionMask {
+    /// How much each pixel is selected, 0 to 1. With `radius` 0 this is just the hard mask; with a
+    /// larger radius the edge is feathered: blurred symmetrically so the 50% point stays on the
+    /// original boundary. Pixels past the image border count as their nearest edge pixel, so a
+    /// selection that touches the border doesn't fade out there.
+    public func softCoverage(radius: Int) -> [Float] {
+        var data = flags.map { $0 ? Float(1) : 0 }
+        guard radius > 0 else { return data }
+        // Three box blurs approximate a Gaussian.
+        for _ in 0..<3 {
+            data = Self.boxBlur(data, width: width, height: height, radius: radius, horizontal: true)
+            data = Self.boxBlur(data, width: width, height: height, radius: radius, horizontal: false)
+        }
+        return data
+    }
+
+    private static func boxBlur(_ data: [Float], width: Int, height: Int, radius: Int, horizontal: Bool) -> [Float] {
+        var out = data
+        let lines = horizontal ? height : width
+        let length = horizontal ? width : height
+        let window = Float(2 * radius + 1)
+        for line in 0..<lines {
+            func index(_ i: Int) -> Int { horizontal ? line * width + i : i * width + line }
+            func value(_ i: Int) -> Float { data[index(min(max(i, 0), length - 1))] }
+            var sum: Float = 0
+            for i in -radius...radius { sum += value(i) }
+            for i in 0..<length {
+                out[index(i)] = sum / window
+                sum += value(i + radius + 1) - value(i - radius)
+            }
+        }
+        return out
+    }
+}
+
 extension RasterImage {
-    /// A copy with the selected pixels made fully transparent.
-    public func clearingPixels(in mask: SelectionMask) -> RasterImage {
+    /// A copy with the selected pixels made transparent. A positive `feather` (in pixels) softens
+    /// the boundary: pixels near the edge become partly transparent instead of switching abruptly.
+    public func clearingPixels(in mask: SelectionMask, feather: Int = 0) -> RasterImage {
         precondition(mask.width == width && mask.height == height, "mask size mismatch")
         var out = self
-        for p in 0..<(width * height) where mask.flags[p] {
+        if feather <= 0 {
+            for p in 0..<(width * height) where mask.flags[p] {
+                let i = p * 4
+                out.pixels[i] = 0
+                out.pixels[i + 1] = 0
+                out.pixels[i + 2] = 0
+                out.pixels[i + 3] = 0
+            }
+            return out
+        }
+        let coverage = mask.softCoverage(radius: feather)
+        for p in 0..<(width * height) where coverage[p] > 0 {
             let i = p * 4
-            out.pixels[i] = 0
-            out.pixels[i + 1] = 0
-            out.pixels[i + 2] = 0
-            out.pixels[i + 3] = 0
+            let keep = 1 - min(1, coverage[p])
+            let alpha = UInt8((Float(pixels[i + 3]) * keep).rounded())
+            out.pixels[i + 3] = alpha
+            if alpha == 0 { out.pixels[i] = 0; out.pixels[i + 1] = 0; out.pixels[i + 2] = 0 }
         }
         return out
     }
@@ -147,4 +206,49 @@ public enum MagicWand {
 
 extension SelectionMask {
     fileprivate mutating func setFlag(_ index: Int) { flags[index] = true }
+}
+
+// MARK: Shapes
+
+extension SelectionMask {
+    /// A rectangular selection, clamped to the image.
+    public static func rectangle(width: Int, height: Int, rect: PixelRect) -> SelectionMask {
+        var mask = SelectionMask(width: width, height: height)
+        let r = rect.intersection(PixelRect(x: 0, y: 0, width: width, height: height))
+        guard !r.isEmpty else { return mask }
+        for y in r.y..<r.maxY {
+            for x in r.x..<r.maxX { mask.flags[y * width + x] = true }
+        }
+        return mask
+    }
+
+    /// A freehand (lasso) selection: the area inside the closed polygon through `points`, given in
+    /// pixel coordinates. A pixel is inside when its center is (even-odd rule), so a polygon that
+    /// encloses a pixel's center selects it.
+    public static func polygon(width: Int, height: Int, points: [(x: Double, y: Double)]) -> SelectionMask {
+        var mask = SelectionMask(width: width, height: height)
+        guard points.count >= 3 else { return mask }
+
+        for y in 0..<height {
+            let cy = Double(y) + 0.5
+            var crossings: [Double] = []
+            for i in 0..<points.count {
+                let a = points[i], b = points[(i + 1) % points.count]
+                // Does this edge cross the horizontal line through the pixel centers of row y?
+                if (a.y <= cy && b.y > cy) || (b.y <= cy && a.y > cy) {
+                    crossings.append(a.x + (cy - a.y) / (b.y - a.y) * (b.x - a.x))
+                }
+            }
+            crossings.sort()
+            var i = 0
+            while i + 1 < crossings.count {
+                // Pixels whose centers (x + 0.5) lie between a pair of crossings.
+                let from = max(0, Int((crossings[i] - 0.5).rounded(.up)))
+                let to = min(width - 1, Int((crossings[i + 1] - 0.5).rounded(.down)))
+                if from <= to { for x in from...to { mask.flags[y * width + x] = true } }
+                i += 2
+            }
+        }
+        return mask
+    }
 }

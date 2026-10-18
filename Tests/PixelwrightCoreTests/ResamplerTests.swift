@@ -323,3 +323,20 @@ struct DialogContentsTests {
         }
     }
 }
+
+@Suite("Plain-language descriptions")
+struct DescriptionTests {
+    @Test("Every resampling method has its own explanation")
+    func summaries() {
+        let summaries = ResamplingMethod.allCases.map(\.summary)
+        #expect(summaries.allSatisfy { !$0.isEmpty })
+        #expect(Set(summaries).count == summaries.count)
+    }
+
+    @Test("Every anchor has a readable name")
+    func anchorNames() {
+        let names = AnchorEdge.allCases.map(\.displayName)
+        #expect(Set(names).count == 9)
+        #expect(AnchorEdge.middle.displayName == "Center")
+    }
+}
