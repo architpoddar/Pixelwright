@@ -23,13 +23,15 @@ public enum Resampler {
         precondition(width > 0 && height > 0, "target size must be at least 1x1")
         if width == image.width && height == image.height { return image }
 
-        guard let kernel = method.kernel else {
+        let scaleX = Double(width) / Double(image.width)
+        let scaleY = Double(height) / Double(image.height)
+        guard let strategy = method.weightStrategy(scaleX: scaleX, scaleY: scaleY) else {
             return nearestNeighbor(image, width: width, height: height)
         }
 
         let source = toPremultiplied(image, linear: gammaCorrect)
-        let xWeights = AxisWeights(sourceSize: image.width, destinationSize: width, kernel: kernel)
-        let yWeights = AxisWeights(sourceSize: image.height, destinationSize: height, kernel: kernel)
+        let xWeights = AxisWeights(sourceSize: image.width, destinationSize: width, strategy: strategy)
+        let yWeights = AxisWeights(sourceSize: image.height, destinationSize: height, strategy: strategy)
 
         let horizontal = horizontalPass(source, srcWidth: image.width, rows: image.height, weights: xWeights, dstWidth: width)
         let both = verticalPass(horizontal, width: width, srcRows: image.height, weights: yWeights, dstRows: height)

@@ -35,9 +35,10 @@ struct KernelTests {
     @Test("Axis weights are normalized for every method and scale")
     func weightsNormalized() {
         for method in ResamplingMethod.allCases {
-            guard let kernel = method.kernel else { continue }
-            for (src, dst) in [(100, 37), (37, 100), (64, 64), (3, 1), (1, 9)] {
-                let w = AxisWeights(sourceSize: src, destinationSize: dst, kernel: kernel)
+            for (src, dst) in [(100, 37), (37, 100), (64, 64), (3, 1), (1, 9), (10, 400), (400, 10)] {
+                let scale = Double(dst) / Double(src)
+                guard let strategy = method.weightStrategy(scaleX: scale, scaleY: scale) else { continue }
+                let w = AxisWeights(sourceSize: src, destinationSize: dst, strategy: strategy)
                 for i in 0..<dst {
                     let sum = (0..<w.counts[i]).reduce(Float(0)) { $0 + w.weights[w.offsets[i] + $1] }
                     #expect(abs(sum - 1) < 1e-4, "\(method) \(src)->\(dst) at \(i)")
@@ -181,5 +182,144 @@ struct SizeMathTests {
     func printSize() {
         #expect(SizeMath.printSize(pixels: 192, resolution: 96) == 2)
         #expect(SizeMath.pixels(printSize: 2, resolution: 96) == 192)
+    }
+}
+
+@Suite("Additional resampling modes")
+struct AdditionalModeTests {
+    @Test("Spline36 hits its defining values and is a partition of unity")
+    func spline36() {
+        let k = ResamplingKernel.spline36
+        #expect(abs(k.weight(0) - 1) < 1e-12)
+        for n in 1...3 { #expect(abs(k.weight(Double(n))) < 1e-12, "k(\(n))") }
+        #expect(k.weight(3.5) == 0)
+        // Samples of a kernel with integer-spaced shifts must sum to 1 for any offset.
+        for f in stride(from: 0.0, to: 1.0, by: 0.1) {
+            let sum = (-3...3).reduce(0.0) { $0 + k.weight(f - Double($1)) }
+            #expect(abs(sum - 1) < 1e-9, "offset \(f): \(sum)")
+        }
+    }
+
+    @Test("Quadratic interpolates: 1 at 0, 0 at integers, 1/2 at half steps")
+    func quadratic() {
+        let k = ResamplingKernel.quadratic
+        #expect(k.weight(0) == 1)
+        #expect(abs(k.weight(1)) < 1e-12)
+        #expect(abs(k.weight(0.5) - 0.5) < 1e-12)
+        #expect(abs(k.weight(1.5)) < 1e-12)
+        for f in stride(from: 0.0, to: 1.0, by: 0.125) {
+            let sum = (-2...2).reduce(0.0) { $0 + k.weight(f - Double($1)) }
+            #expect(abs(sum - 1) < 1e-9, "offset \(f): \(sum)")
+        }
+    }
+
+    @Test("Adaptive picks its kernel from the scale factor")
+    func adaptiveSelection() {
+        func probe(_ scale: Double) -> (support: Double, mid: Double) {
+            let k = ResamplingMethod.adaptiveKernel(forScale: scale)
+            return (k.support, k.weight(0.5))
+        }
+        #expect(probe(1).support == 1)       // bilinear
+        #expect(probe(0.4).support == 3)     // Lanczos
+        #expect(probe(0.5).support == 3)     // Spline36 starts at exactly 0.5
+        #expect(probe(2).support == 3)       // Spline36
+        #expect(probe(4).support == 3)       // Spline36 still includes 4
+        #expect(probe(5).support == 2)       // Catmull-Rom
+        #expect(probe(16).support == 2)      // Catmull-Rom still includes 16
+        #expect(probe(20).support == 1.5)    // quadratic
+        // Lanczos and Spline36 both have support 3, so tell them apart by value.
+        #expect(abs(probe(0.4).mid - 0.6079271018540267) < 1e-9)  // Lanczos3 at 0.5
+        #expect(abs(probe(2).mid - ResamplingKernel.spline36.weight(0.5)) < 1e-12)
+    }
+
+    @Test("Fant is an exact area average: 4 -> 2 averages pairs, 3 -> 1 averages all")
+    func fantAverages() {
+        var img = RasterImage(width: 4, height: 1, fill: .black)
+        for (x, v) in [0, 100, 200, 40].enumerated() { img[x, 0] = RGBA8(r: UInt8(v), g: UInt8(v), b: UInt8(v)) }
+        let half = Resampler.resize(img, width: 2, height: 1, method: .fant, gammaCorrect: false)
+        #expect(half[0, 0].r == 50 && half[1, 0].r == 120)
+
+        var three = RasterImage(width: 3, height: 1, fill: .black)
+        for (x, v) in [30, 60, 120].enumerated() { three[x, 0] = RGBA8(r: UInt8(v), g: UInt8(v), b: UInt8(v)) }
+        let one = Resampler.resize(three, width: 1, height: 1, method: .fant, gammaCorrect: false)
+        #expect(one[0, 0].r == 70)
+    }
+
+    @Test("Fant weights split pixels fractionally when the ratio isn't whole (3 -> 2)")
+    func fantFractional() {
+        let w = AxisWeights(sourceSize: 3, destinationSize: 2, strategy: .areaAverage)
+        // Output 0 covers source [0, 1.5): all of pixel 0 and half of pixel 1.
+        #expect(w.starts[0] == 0 && w.counts[0] == 2)
+        #expect(abs(w.weights[w.offsets[0]] - 2.0 / 3.0) < 1e-6)
+        #expect(abs(w.weights[w.offsets[0] + 1] - 1.0 / 3.0) < 1e-6)
+    }
+
+    @Test("Low-quality bilinear only ever uses two source pixels, even when shrinking a lot")
+    func lowQualityIsTwoTap() {
+        let scale = 2.0 / 12.0
+        let strategy = ResamplingMethod.bilinearLowQuality.weightStrategy(scaleX: scale, scaleY: scale)!
+        let w = AxisWeights(sourceSize: 12, destinationSize: 2, strategy: strategy)
+        for i in 0..<2 { #expect(w.counts[i] <= 2) }
+        // Proper bilinear averages many pixels when shrinking.
+        let full = ResamplingMethod.bilinear.weightStrategy(scaleX: scale, scaleY: scale)!
+        let wide = AxisWeights(sourceSize: 12, destinationSize: 2, strategy: full)
+        #expect(wide.counts[0] > 2)
+    }
+
+    @Test("Low-quality bilinear picks exact pixels on a ramp where area averaging would blur")
+    func lowQualityRamp() {
+        var img = RasterImage(width: 6, height: 1, fill: .black)
+        for x in 0..<6 { let v = UInt8(x * 40); img[x, 0] = RGBA8(r: v, g: v, b: v) }
+        // 6 -> 2: output centers map to source positions 1.0 and 4.0 -> pixels 1 and 4 exactly.
+        let lq = Resampler.resize(img, width: 2, height: 1, method: .bilinearLowQuality, gammaCorrect: false)
+        #expect(lq[0, 0].r == 40 && lq[1, 0].r == 160)
+    }
+
+    @Test("Edge pixels replicate: weights past the border fold onto the edge pixel")
+    func edgeReplication() {
+        // Catmull-Rom, 4 -> 8. Output 0 center = 0.25 -> window reaches left of pixel 0.
+        let strategy = ResamplingMethod.bicubic.weightStrategy(scaleX: 2, scaleY: 2)!
+        let w = AxisWeights(sourceSize: 4, destinationSize: 8, strategy: strategy)
+        #expect(w.starts[0] == 0)
+        let k = ResamplingKernel.cubic(b: 0, c: 0.5)
+        let center = 0.25
+        let taps = (-2...2).map { (j: $0, w: k.weight(Double($0) + 0.5 - center)) }
+        let total = taps.reduce(0.0) { $0 + $1.w }
+        let edge = taps.filter { $0.j <= 0 }.reduce(0.0) { $0 + $1.w } / total
+        #expect(abs(Double(w.weights[w.offsets[0]]) - edge) < 1e-6)
+    }
+
+    @Test("Every method keeps a solid color solid, including the new ones")
+    func newModesPreserveSolid() {
+        let img = RasterImage(width: 9, height: 7, fill: RGBA8(r: 12, g: 200, b: 99))
+        for method in [ResamplingMethod.bilinearLowQuality, .adaptiveSharp, .fant] {
+            for (w, h) in [(3, 2), (30, 21), (400, 5)] {
+                let out = Resampler.resize(img, width: w, height: h, method: method)
+                for y in 0..<h { for x in 0..<w {
+                    let p = out[x, y]
+                    #expect(abs(Int(p.r) - 12) <= 1 && abs(Int(p.g) - 200) <= 1 && abs(Int(p.b) - 99) <= 1 && p.a == 255,
+                            "\(method) \(w)x\(h) (\(x),\(y)): \(p)")
+                } }
+            }
+        }
+    }
+}
+
+@Suite("Resize dialog contents")
+struct DialogContentsTests {
+    @Test("The dropdown lists the eight methods in Paint.NET's order")
+    func dropdownOrder() {
+        #expect(ResamplingMethod.allCases.map(\.displayName) == [
+            "Bicubic", "Bicubic (Smooth)", "Bilinear", "Bilinear (Low Quality)",
+            "Adaptive (Sharp)", "Lanczos", "Fant", "Nearest Neighbor",
+        ])
+        #expect(ResamplingMethod.allCases.first == .bicubic) // the default
+    }
+
+    @Test("Only Nearest Neighbor ignores gamma correction")
+    func gammaSupport() {
+        for method in ResamplingMethod.allCases {
+            #expect(method.supportsGammaCorrection == (method != .nearestNeighbor))
+        }
     }
 }
