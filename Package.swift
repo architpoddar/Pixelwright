@@ -20,5 +20,11 @@ let package = Package(
             name: "PixelwrightCoreTests",
             dependencies: ["PixelwrightCore"]
         ),
+        // File reading and writing, and the batch pipeline, tested against real files.
+        .testTarget(
+            name: "PixelwrightAppTests",
+            dependencies: ["Pixelwright", "PixelwrightCore"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
     ]
 )

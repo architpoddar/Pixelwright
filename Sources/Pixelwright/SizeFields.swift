@@ -64,6 +64,7 @@ struct SizeFields: View {
             }
 
             Toggle("Maintain aspect ratio", isOn: $state.keepAspect)
+                .help("Changing the width also changes the height (and the other way round) so the picture isn't stretched.")
         }
         .disabled(!fieldsEnabled)
     }

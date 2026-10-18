@@ -63,6 +63,7 @@ struct CanvasSizeSheet: View {
                             }
                             .labelsHidden()
                             .frame(width: 130)
+                            .help("What fills the new space when the canvas gets bigger. Transparent keeps it see-through.")
                             if fillChoice == .color {
                                 ColorPicker("Color", selection: $customColor, supportsOpacity: true)
                             }
@@ -132,7 +133,8 @@ struct AnchorGrid: View {
                         }
                         .buttonStyle(.bordered)
                         .tint(selection == edge ? .accentColor : nil)
-                        .help(String(describing: edge))
+                        .help("Keep the picture at the \(edge.displayName.lowercased()). The canvas grows or shrinks from the opposite side.")
+                        .accessibilityLabel(edge.displayName)
                     }
                 }
             }

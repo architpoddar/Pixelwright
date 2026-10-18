@@ -82,23 +82,30 @@ extension RasterImage {
         )
     }
 
-    func write(to url: URL, resolution: ImageResolution = .default) throws {
-        let type: UTType
-        switch url.pathExtension.lowercased() {
-        case "jpg", "jpeg": type = .jpeg
-        case "heic": type = .heic
-        case "tif", "tiff": type = .tiff
-        default: type = .png
-        }
+    /// Encodes to file data. `quality` (0 to 1) only matters for lossy formats (JPEG, HEIC).
+    func encoded(as format: ExportFormat, quality: Double = 0.9, resolution: ImageResolution = .default) throws -> Data {
         // JPEG has no alpha: flatten onto white so transparent areas don't turn black.
-        let source = type == .jpeg ? flattened(onto: .white) : self
-        guard let cg = source.makeCGImage(),
-              let dest = CGImageDestinationCreateWithURL(url as CFURL, type.identifier as CFString, 1, nil)
-        else { throw ImageIOError.cannotWrite(url) }
+        let source = format == .jpeg ? flattened(onto: .white) : self
+        guard let cg = source.makeCGImage() else { throw ImageIOError.cannotCreateImage }
+        let data = NSMutableData()
+        guard let dest = CGImageDestinationCreateWithData(data, format.utType.identifier as CFString, 1, nil)
+        else { throw ImageIOError.cannotCreateImage }
         let dpi = resolution.pixelsPerInch
-        let properties: [CFString: Any] = [kCGImagePropertyDPIWidth: dpi, kCGImagePropertyDPIHeight: dpi]
+        var properties: [CFString: Any] = [kCGImagePropertyDPIWidth: dpi, kCGImagePropertyDPIHeight: dpi]
+        if format.supportsQuality { properties[kCGImageDestinationLossyCompressionQuality] = quality }
         CGImageDestinationAddImage(dest, cg, properties as CFDictionary)
-        guard CGImageDestinationFinalize(dest) else { throw ImageIOError.cannotWrite(url) }
+        guard CGImageDestinationFinalize(dest) else { throw ImageIOError.cannotCreateImage }
+        return data as Data
+    }
+
+    /// Writes the image; the format comes from the file extension unless one is given.
+    func write(to url: URL, format: ExportFormat? = nil, quality: Double = 0.9, resolution: ImageResolution = .default) throws {
+        let chosen = format ?? ExportFormat(pathExtension: url.pathExtension) ?? .png
+        do {
+            try encoded(as: chosen, quality: quality, resolution: resolution).write(to: url)
+        } catch {
+            throw ImageIOError.cannotWrite(url)
+        }
     }
 
     private func flattened(onto background: RGBA8) -> RasterImage {
@@ -113,5 +120,52 @@ extension RasterImage {
             out.pixels[i + 3] = 255
         }
         return out
+    }
+}
+
+/// The file formats Pixelwright can save.
+enum ExportFormat: String, CaseIterable, Identifiable {
+    case png, jpeg, heic, tiff
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .png: "PNG"
+        case .jpeg: "JPEG"
+        case .heic: "HEIC"
+        case .tiff: "TIFF"
+        }
+    }
+
+    var utType: UTType {
+        switch self {
+        case .png: .png
+        case .jpeg: .jpeg
+        case .heic: .heic
+        case .tiff: .tiff
+        }
+    }
+
+    var fileExtension: String {
+        switch self {
+        case .png: "png"
+        case .jpeg: "jpg"
+        case .heic: "heic"
+        case .tiff: "tiff"
+        }
+    }
+
+    /// JPEG and HEIC trade quality for size.
+    var supportsQuality: Bool { self == .jpeg || self == .heic }
+
+    init?(pathExtension: String) {
+        switch pathExtension.lowercased() {
+        case "png": self = .png
+        case "jpg", "jpeg": self = .jpeg
+        case "heic", "heif": self = .heic
+        case "tif", "tiff": self = .tiff
+        default: return nil
+        }
     }
 }

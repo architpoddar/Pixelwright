@@ -64,8 +64,16 @@ struct ResizeSheet: View {
                         }
                     }
                     .frame(width: 270)
+                    .help("How the new pixels are worked out. Bicubic is a good choice for most photos.")
+                    Text(method.summary)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                     Toggle("Use gamma correction", isOn: $gamma)
                         .disabled(!method.supportsGammaCorrection)
+                        .help(
+                            "Resizes in linear light so brightness and color stay accurate when shrinking. Slightly slower. Not used by Nearest Neighbor."
+                        )
 
                     Text(
                         size.isValid
