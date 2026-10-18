@@ -19,8 +19,6 @@ Rough priorities. Nothing here is a promise; open an issue to discuss or to pick
 - **Open Recent**, a **New Image** dialog, and saving back to the same file.
 - **Better edges** on one-click Remove Background (fine hair and fur).
 - **Close the remaining open questions** in section 5 of [resize-canvas-spec.md](resize-canvas-spec.md).
-- **Downloadable builds** attached to GitHub releases, once there is something worth sharing
-  beyond building from source.
 
 ## Later
 

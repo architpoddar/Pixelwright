@@ -18,6 +18,7 @@ Pixelwright is a native macOS image editor (Swift 6, SwiftUI, Swift Package Mana
 | Run one suite | `swift test --filter CanvasSizeTests` (use the Swift type name; display names don't match) |
 | Format a file | `swift format format --in-place --configuration '{"version":1,"indentation":{"spaces":4},"lineLength":130}' <file>` |
 | Build a launchable app | `./scripts/make-app.sh` (add `debug` for a debug build) |
+| Install it into Applications | `./scripts/install.sh` (`--open`, `--to <folder>`, `--uninstall`) |
 | Launch it | `open build/Pixelwright.app` |
 | Open a file in it | `open -a "$PWD/build/Pixelwright.app" "$PWD/Samples/disc.png"` |
 | Quit it before rebuilding | `pkill -x Pixelwright` |
@@ -90,6 +91,14 @@ Always run `swift test` before finishing a change. The suite takes about a secon
   Select menu (Rectangle ⇧⌘M, Lasso ⇧⌘L, Magic Wand ⇧⌘W, Pointer ⇧⌘P). Adjustments and Effects have
   their own menus; File has Export… (⇧⌘E) and Batch Resize… (⌥⌘B).
 - Use your own photos for testing background removal. Don't commit third-party photos to `Samples/`.
+
+## The installer must stay safe
+
+`scripts/install.sh` is how most people will get the app, so it must never backfire: no `sudo`, no
+network, never replace or remove an app that isn't Pixelwright (it checks the bundle id), keep the
+existing install if the build fails, and never kill a running copy (there may be unsaved work). Tested
+by hand against each case (fresh install, replace, foreign app, running app, failed build, missing
+requirements, unwritable folder, uninstall); re-run those checks if you change it.
 
 ## Originals are never overwritten
 

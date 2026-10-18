@@ -78,28 +78,40 @@ You can also block the app in a firewall such as Little Snitch or LuLu and nothi
   the originals.
 - Copy and paste (as a new image), undo and redo, zoom, drag-and-drop.
 
-## Requirements
+## Install
 
-- macOS 14 (Sonoma) or later
-- Xcode 16 or later (Swift 6) to build from source
+Pixelwright is built from source, on your own Mac. There is no download, so there is no security
+warning and nothing to trust except code you can read. You need two things, once:
 
-## Build and run
+- **macOS 14 (Sonoma) or later**
+- **Xcode 16 or later** (free from the Mac App Store; open it once so it can finish setting up)
+
+Then, in Terminal:
 
 ```bash
 git clone https://github.com/architpoddar/Pixelwright.git
 cd Pixelwright
-
-./scripts/make-app.sh      # builds build/Pixelwright.app
-open build/Pixelwright.app
+./scripts/install.sh --open
 ```
 
-The build is ad-hoc signed, so it runs on the Mac that built it. For a quick developer
-launch you can also use `swift run Pixelwright`.
+That builds the app (a minute or two the first time), puts it in your Applications folder and
+opens it. If something is missing, the script tells you in plain words what to do.
 
-Run the tests with:
+- **Update:** `git pull`, quit Pixelwright, run `./scripts/install.sh` again.
+- **Remove:** `./scripts/install.sh --uninstall`.
+- **Somewhere else:** `./scripts/install.sh --to ~/Applications`.
+
+The installer is short and readable ([`scripts/install.sh`](scripts/install.sh)), and it is careful:
+it only writes to the `build` folder here and to `Pixelwright.app` where you install it; it never
+uses `sudo` or the network; it won't touch a different app that happens to share the name; it keeps
+your current install if the build fails; and it won't close Pixelwright for you, since you might have
+unsaved work.
+
+For development (run the app without installing, run the tests):
 
 ```bash
-swift test
+swift run Pixelwright     # quick look, no app bundle
+swift test                # the test suite
 ```
 
 ## How it works

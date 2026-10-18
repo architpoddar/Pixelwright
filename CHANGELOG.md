@@ -27,6 +27,10 @@ First version.
 - Batch Resize: many images to a size you choose, saved as copies in a folder.
 - Copy and paste as a new image; open and save; undo and redo; zoom; drag-and-drop.
 
+**Install**
+- `./scripts/install.sh` builds the app and installs it into Applications in one command, with
+  `--open`, `--to` and `--uninstall`, and safeguards so it can't replace another app or lose work.
+
 **Private by design**
 - Fully local: no server, no account, no analytics, no network access, no third-party code.
   The README shows three quick checks to verify it.

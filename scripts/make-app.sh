@@ -1,9 +1,16 @@
 #!/bin/zsh
 # Builds Pixelwright and wraps it in a launchable .app bundle at build/Pixelwright.app
+#
+#   ./scripts/make-app.sh          release build for this Mac
+#   ./scripts/make-app.sh debug    debug build
+#
+# To install the result into Applications, use ./scripts/install.sh instead.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 CONFIG="${1:-release}"
+VERSION="$(tr -d '[:space:]' < VERSION)"
+
 swift build -c "$CONFIG"
 BIN="$(swift build -c "$CONFIG" --show-bin-path)/Pixelwright"
 
@@ -25,7 +32,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>NSHumanReadableCopyright</key><string>Copyright © 2026 Archit Poddar and Pixelwright contributors. MIT License.</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>0.1.0</string>
+    <key>CFBundleShortVersionString</key><string>$VERSION</string>
     <key>CFBundleVersion</key><string>1</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>NSHighResolutionCapable</key><true/>
