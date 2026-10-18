@@ -1,40 +1,69 @@
 # Pixelwright
 
-A small, fast image editor for macOS, inspired by the everyday tools in Paint.NET.
-v1 focuses on three things: **Resize**, **Canvas Size** and **Background removal**.
+A small, fast image editor for macOS, built around the everyday tools people reach for in
+classic Windows editors like Paint.NET: **Resize**, **Canvas Size** and **Background removal**.
 
-## Run it
+Native Swift and SwiftUI. No cloud, no account: your images never leave your Mac.
+
+> **Status: early (v0.1).** The three core tools work and are tested, but many features
+> are still missing. See the [roadmap](docs/roadmap.md).
+
+## Features
+
+- **Resize** by percentage or exact pixels, with an aspect-ratio lock.
+  Resampling: Bicubic (Catmull-Rom), Bicubic (Smooth), Bilinear, Lanczos, Nearest Neighbor.
+  Optional gamma-correct (linear-light) resizing, which keeps brightness right when shrinking.
+- **Canvas Size** with a 3x3 anchor grid and a fill of Transparent, White, Black or any color.
+  Growing adds space; shrinking crops.
+- **Remove Background** in one click, using Apple's on-device Vision framework.
+- Open and save PNG, JPEG, TIFF and HEIC. Undo and redo. Zoom, fit-to-window and drag-and-drop.
+
+## Requirements
+
+- macOS 14 (Sonoma) or later
+- Xcode 16 or later (Swift 6) to build from source
+
+## Build and run
 
 ```bash
-./scripts/make-app.sh          # builds build/Pixelwright.app (add "debug" for a debug build)
+git clone https://github.com/<your-account>/Pixelwright.git
+cd Pixelwright
+
+./scripts/make-app.sh      # builds build/Pixelwright.app
 open build/Pixelwright.app
 ```
 
-Or `swift run Pixelwright` for a quick dev launch. Requires macOS 14+ and Xcode 16+ (Swift 6).
+The build is ad-hoc signed, so it runs on the Mac that built it. For a quick developer
+launch you can also use `swift run Pixelwright`.
 
-## Test
+Run the tests with:
 
 ```bash
 swift test
 ```
 
-## Layout
+## How it works
 
-- `Sources/PixelwrightCore`: the image engine (resampling, canvas size, size math). No UI imports.
-- `Sources/Pixelwright`: the SwiftUI app.
-- `Tests/PixelwrightCoreTests`: engine tests.
-- `docs/resize-canvas-spec.md`: behavior spec for Resize and Canvas Size, derived from
-  observing Paint.NET 5.1.12 and its public docs. This is a clean-room project: no Paint.NET
-  code or assets are used.
-- `Samples/`: a test image.
+The image engine lives in its own library, `PixelwrightCore`, with no UI code. It resizes
+using separable two-pass filtering on premultiplied float pixels, so transparent edges don't
+bleed color, and it can work in linear light. The SwiftUI app is a thin layer on top.
+See [docs/architecture.md](docs/architecture.md).
 
-## v1 status
+The exact behavior of Resize and Canvas Size (dialog rules, size limits, anchor math, kernels)
+is written down in [docs/resize-canvas-spec.md](docs/resize-canvas-spec.md), and the tests check it.
 
-- Resize: percentage or absolute size, aspect lock, Bicubic (Catmull-Rom), Bicubic (Smooth),
-  Bilinear, Lanczos, Nearest Neighbor, linear-light "gamma correction".
-- Canvas Size: 3x3 anchor, fill (transparent, white, black, custom color).
-- Remove Background: one click, using Apple's on-device Vision framework.
-- Open/save PNG, JPEG, TIFF, HEIC; undo/redo; zoom.
+## Contributing
 
-Not yet: Fant, Bilinear (Low Quality) and Adaptive (Sharp) resampling; DPI and print size;
-a Magic Wand; layers.
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first, especially the
+clean-room rule: **do not submit code or assets copied from Paint.NET or any other
+proprietary program.** Developers and coding agents should also read [AGENTS.md](AGENTS.md).
+
+## Not affiliated
+
+Pixelwright is an independent project. It is not affiliated with, endorsed by, or derived from
+the source code of Paint.NET or dotPDN LLC. "Paint.NET" is a trademark of its owner and is
+mentioned only to describe which everyday behaviors this app aims to feel familiar with.
+
+## License
+
+[MIT](LICENSE)
