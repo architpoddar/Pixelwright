@@ -8,6 +8,7 @@ import AppKit
 ///     PIXELWRIGHT_DEBUG_SELECT_ALL=1                select everything
 ///     PIXELWRIGHT_DEBUG_EDIT=1                      make an edit (invert), to show the "edited" state
 ///     PIXELWRIGHT_DEBUG_SIZE=700x600                window content size
+///     PIXELWRIGHT_DEBUG_APPEARANCE=light            light or dark, whatever the system is set to
 ///     PIXELWRIGHT_SNAPSHOT=/tmp/window.png          where to write a picture of the window, then quit
 ///                                                   (leave it out to keep the app open in that state)
 ///
@@ -32,6 +33,12 @@ enum DebugHooks {
         if let size = env["PIXELWRIGHT_DEBUG_SIZE"] {
             let parts = size.split(separator: "x").compactMap { Double($0) }
             if parts.count == 2 { window.setContentSize(NSSize(width: parts[0], height: parts[1])) }
+        }
+
+        switch env["PIXELWRIGHT_DEBUG_APPEARANCE"] {
+        case "light": NSApp.appearance = NSAppearance(named: .aqua)
+        case "dark": NSApp.appearance = NSAppearance(named: .darkAqua)
+        default: break
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
@@ -62,8 +69,10 @@ enum DebugHooks {
         if let handle = dlopen("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics", RTLD_NOW),
            let sym = dlsym(handle, "CGWindowListCreateImage") {
             let fn = unsafeBitCast(sym, to: CGWindowListCreateImageFunc.self)
-            // kCGWindowListOptionIncludingWindow = 1, kCGWindowImageBoundsIgnoreFraming = 1
-            if let unmanaged = fn(.null, 1, UInt32(window.windowNumber), 1) {
+            // kCGWindowListOptionIncludingWindow = 8: capture just this window (1 would mean "everything on
+            // screen"), so nothing from other apps can end up in a snapshot.
+            // kCGWindowImageBoundsIgnoreFraming = 1: no drop shadow around the window.
+            if let unmanaged = fn(.null, 8, UInt32(window.windowNumber), 1) {
                 let cgImage = unmanaged.takeRetainedValue()
                 let rep = NSBitmapImageRep(cgImage: cgImage)
                 if let data = rep.representation(using: .png, properties: [:]) {
