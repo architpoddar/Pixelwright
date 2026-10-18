@@ -17,6 +17,12 @@ everyday image-editing tools work, and the result is written down in
 
 If you're unsure whether something is OK to include, ask in the issue before writing it.
 
+## Privacy is a feature
+
+Pixelwright never sends anything anywhere. Please don't add network access, accounts, analytics,
+crash reporting, update checks or third-party dependencies, even optional ones. Pull requests that
+do will be declined.
+
 ## Set up
 
 You need macOS 14+ and Xcode 16+.
@@ -39,6 +45,17 @@ swift test
 5. Run `swift test` and make sure the app still builds with `./scripts/make-app.sh`.
 6. If you change user-visible behavior, update the docs (README, `docs/`).
 7. Open a pull request and fill in the template.
+
+## Testing with real images
+
+Before sending a change that touches image loading, resizing or saving, run the app's real-image test
+on a folder of your own pictures (photos, screenshots, PNGs with transparency, WebP):
+
+```bash
+PIXELWRIGHT_CORPUS=/path/to/your/images swift test -c release --filter CorpusTests
+```
+
+Please don't attach or commit images you don't own.
 
 ## Code guidelines
 

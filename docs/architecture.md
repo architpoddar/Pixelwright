@@ -74,6 +74,19 @@ Pure functions for the dialogs: percent to pixels, aspect-locked partner values,
 away from zero), and limits (1 to 262,144 px per side). Width and height are kept as doubles and
 rounded only when read as pixels, which keeps the aspect lock from drifting.
 
+## Transforms, effects and batch sizing
+
+- `ImageTransform` does pixel-exact rotate, flip, crop and auto-crop (no resampling, so nothing is
+  lost). `RasterImage.croppedToSelection` cuts out a non-rectangular selection on transparency.
+- `Effect` is one value type for every adjustment and filter (brightness/contrast, hue/saturation,
+  black and white, sepia, invert, blur, sharpen, pixelate). `applying(_:within:)` limits it to a
+  selection, and `previewCopy` plus `Effect.scaled(by:)` let the dialogs preview on a smaller copy.
+  `EffectKind` describes each dialog's sliders so the UI is generated from data.
+- `BatchResizeMode` decides each image's new size (longest side, fit in a box, or percentage) and
+  `BatchNaming` picks collision-free output names.
+- `SelectionMask` also has shapes (rectangle, polygon for the lasso), `bounds`, `softCoverage` for
+  feathering, and `resized` for previews.
+
 ## Dialog state: `SizeEditorState`
 
 The Resize and Canvas Size dialogs share one value type that keeps pixel size, print size,
@@ -97,10 +110,16 @@ tolerance. See [selection-and-wand.md](selection-and-wand.md).
 - `ResizeSheet` and `CanvasSizeSheet` are the dialogs. Both keep width and height as doubles and
   route edits through bindings that apply the aspect lock.
 - `BackgroundRemoval` wraps Vision's `VNGenerateForegroundInstanceMaskRequest`.
+- The canvas keeps a ready-made `CGImage` of the picture (and of any live effect preview) so repaints
+  don't convert the pixels again. One drag gesture serves the Rectangle, Lasso and Magic Wand tools.
+- `ExportSheet` encodes in memory to show a file-size estimate; `BatchResizeSheet` runs a `BatchJob`
+  that loads, resizes and writes one file at a time, off the main thread.
+- `Brand.swift` holds the colors, the pixel-P mark, the wordmark, the welcome screen and the About window.
 - `scripts/make-app.sh` wraps the SwiftPM executable in an ad-hoc-signed `.app` bundle.
 
 ## Testing
 
 Engine tests use Swift Testing and tiny synthetic images with exact expected values: kernel
 values, weight normalization, gamma averages, alpha handling, anchor offsets, truncating
-center math and size limits.
+center math, size limits, selection shapes, effects and batch sizing. `PixelwrightAppTests`
+checks real file round trips (PNG, JPEG, HEIC, TIFF, resolution, transparency) and the batch pipeline.

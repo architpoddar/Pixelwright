@@ -4,27 +4,30 @@ Rough priorities. Nothing here is a promise; open an issue to discuss or to pick
 
 ## Done in 0.1
 
-Resize (8 resampling methods, aspect lock, print size and resolution), Canvas Size, one-click
-background removal, Magic Wand with selection tools, undo and redo, open and save.
+- Resize (8 resampling methods, aspect lock, print size and resolution) and Canvas Size.
+- Crop to selection, Auto-Crop, Rotate, Flip.
+- Remove Background, Rectangle, Lasso and Magic Wand selection, feathered Delete.
+- Brightness / Contrast, Hue / Saturation, Black and White, Sepia, Invert, Blur, Sharpen, Pixelate.
+- Export with quality and size options, Batch Resize, copy and paste, undo and redo.
 
 ## Next
 
-- **Feathered and smoother selection edges** so cut-outs don't have hard edges; refine the
-  edges of one-click background removal.
-- **Crop** (to selection and by rectangle), plus rotate and flip.
-- **Rectangle and lasso selection**, and a **clipboard** (copy and paste images).
-- **Export tools**: Save As with quality options (JPEG, HEIC), batch resize.
+- **Drawing basics:** pencil, brush, eraser, shapes and text. The biggest missing piece for
+  people who think of this as "Paint".
+- **Layers**, so pasted images and text can be moved and edited before they are flattened.
+- **Free-angle rotate** and **straighten**, and a **Levels / Curves** adjustment.
+- **Open Recent**, a **New Image** dialog, and saving back to the same file.
+- **Better edges** on one-click Remove Background (fine hair and fur).
 - **Close the remaining open questions** in section 5 of [resize-canvas-spec.md](resize-canvas-spec.md).
+- **Downloadable builds** attached to GitHub releases, once there is something worth sharing
+  beyond building from source.
 
 ## Later
 
-- Crop, rotate and flip.
-- Selection tools and a clipboard (copy and paste images).
-- Layers.
-- Basic adjustments (brightness and contrast, levels) and a few effects.
-- App icon, Developer ID signing, notarization and downloadable releases.
+- Gradient and color-fill tools, a color picker, and a palette.
+- More effects (noise, vignette, emboss) and a few filters.
 - Localization.
 
 ## Not planned for 0.x
 
-Plugins, a full brush engine, text tools, animation.
+Plugins, animation, and distribution through any app store.

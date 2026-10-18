@@ -3,3 +3,6 @@ build/
 .swiftpm/
 *.xcodeproj
 .DS_Store
+
+# Private working files (not for the public repo)
+design-brief/
