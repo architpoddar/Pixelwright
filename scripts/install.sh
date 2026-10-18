@@ -5,6 +5,7 @@
 #   ./scripts/install.sh --open        ...and launch it afterwards
 #   ./scripts/install.sh --to ~/Apps   install somewhere else
 #   ./scripts/install.sh --uninstall   remove the installed app
+#   ./scripts/install.sh --verbose     show the full build output
 #
 # You build the app yourself on your own Mac, so macOS shows no "downloaded from the internet"
 # warning, and the app matches your Mac's chip. Needs macOS 14+ and Xcode 16+ (Swift 6).
@@ -22,12 +23,14 @@ BUNDLE_ID="com.pixelwright.app"
 DEST="/Applications"
 OPEN=0
 UNINSTALL=0
+VERBOSE=0
 while (( $# > 0 )); do
   case "$1" in
     --open) OPEN=1 ;;
     --uninstall) UNINSTALL=1 ;;
+    --verbose) VERBOSE=1 ;;
     --to) shift; DEST="${1:?--to needs a folder}" ;;
-    -h|--help) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "Unknown option: $1 (try --help)"; exit 2 ;;
   esac
   shift
@@ -83,7 +86,18 @@ require_not_running
 
 # --- Build, then install ---------------------------------------------------------------------------
 echo "Building Pixelwright $(tr -d '[:space:]' < VERSION). The first build takes a minute or two..."
-./scripts/make-app.sh release
+if (( VERBOSE )); then
+  ./scripts/make-app.sh release
+else
+  # Keep the build output out of the way unless something goes wrong.
+  BUILD_LOG="$(mktemp -t pixelwright-build)"
+  if ! ./scripts/make-app.sh release >"$BUILD_LOG" 2>&1; then
+    echo
+    tail -n 40 "$BUILD_LOG"
+    fail "the build failed (the last lines above say why; the full log is at $BUILD_LOG). Nothing was installed."
+  fi
+  rm -f "$BUILD_LOG"
+fi
 [[ "$(bundle_id_of build/Pixelwright.app)" == "$BUNDLE_ID" ]] || fail "the build didn't produce a valid app. Nothing was installed."
 
 mkdir -p "$DEST" 2>/dev/null || true

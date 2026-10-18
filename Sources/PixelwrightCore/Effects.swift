@@ -218,12 +218,12 @@ public enum Effect: Equatable, Sendable {
         let lines = horizontal ? height : width
         let length = horizontal ? width : height
         let stride = horizontal ? 4 : width * 4
-        let lineStart: (Int) -> Int = { horizontal ? $0 * width * 4 : $0 * 4 }
+        let lineStride = horizontal ? width * 4 : 4  // distance between the starts of neighboring lines
         let window = Float(2 * radius + 1)
         data.withUnsafeMutableBufferPointer { buffer in
             let shared = SharedPointer(base: buffer.baseAddress!)
             DispatchQueue.concurrentPerform(iterations: lines) { line in
-                let start = lineStart(line)
+                let start = line * lineStride
                 var source = [Float](repeating: 0, count: length * 4)
                 for i in 0..<length { for c in 0..<4 { source[i * 4 + c] = shared.base[start + i * stride + c] } }
                 for c in 0..<4 {

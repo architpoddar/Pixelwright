@@ -6,6 +6,13 @@ private struct SharedPointer<T>: @unchecked Sendable {
     let base: UnsafeMutablePointer<T>
 }
 
+/// Read-only counterpart: workers only read from it, and it outlives them (the enclosing
+/// `withUnsafeBufferPointer` call doesn't return until every worker is done).
+private struct SharedReadBuffer<T>: @unchecked Sendable {
+    let buffer: UnsafeBufferPointer<T>
+    subscript(index: Int) -> T { buffer[index] }
+}
+
 public enum Resampler {
     /// Resizes `image` to `width` x `height`.
     ///
@@ -69,8 +76,10 @@ public enum Resampler {
         var dst = [Float](repeating: 0, count: dstWidth * rows * 4)
         dst.withUnsafeMutableBufferPointer { dstBuf in
             let out = SharedPointer(base: dstBuf.baseAddress!)
-            src.withUnsafeBufferPointer { srcBuf in
-                weights.weights.withUnsafeBufferPointer { wBuf in
+            src.withUnsafeBufferPointer { srcRaw in
+                let srcBuf = SharedReadBuffer(buffer: srcRaw)
+                weights.weights.withUnsafeBufferPointer { wRaw in
+                    let wBuf = SharedReadBuffer(buffer: wRaw)
                     DispatchQueue.concurrentPerform(iterations: rows) { y in
                         let srcRow = y * srcWidth * 4
                         let dstRow = y * dstWidth * 4
@@ -107,8 +116,10 @@ public enum Resampler {
         var dst = [Float](repeating: 0, count: rowLength * dstRows)
         dst.withUnsafeMutableBufferPointer { dstBuf in
             let out = SharedPointer(base: dstBuf.baseAddress!)
-            src.withUnsafeBufferPointer { srcBuf in
-                weights.weights.withUnsafeBufferPointer { wBuf in
+            src.withUnsafeBufferPointer { srcRaw in
+                let srcBuf = SharedReadBuffer(buffer: srcRaw)
+                weights.weights.withUnsafeBufferPointer { wRaw in
+                    let wBuf = SharedReadBuffer(buffer: wRaw)
                     DispatchQueue.concurrentPerform(iterations: dstRows) { y in
                         let start = weights.starts[y]
                         let count = weights.counts[y]
