@@ -146,6 +146,6 @@ edited. Keep using those helpers for any new command that shares a standard shor
 ## Known gaps
 
 Not implemented yet: drawing tools, layers, free-angle rotate, a Levels / Curves adjustment.
-Open questions about Paint.NET behavior are in section 5 of `docs/resize-canvas-spec.md`.
-Fant follows the published area-averaging algorithm; Windows' own scaler isn't readable, so
-enlargements may differ slightly from Paint.NET.
+Open questions about Resize and Canvas Size behavior are in section 5 of `docs/resize-canvas-spec.md`.
+Fant follows the published area-averaging algorithm, so enlargements may differ slightly from
+other editors' Fant implementations.

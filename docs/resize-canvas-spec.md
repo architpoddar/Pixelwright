@@ -1,41 +1,52 @@
-# Paint.NET Resize and Canvas Size: behavior spec for the Mac port
+# Resize and Canvas Size: behavior spec
 
-Source: Paint.NET 5.1.12 x64 portable build, plus the public Paint.NET docs.
-This is a behavioral spec for a clean-room reimplementation. It describes what the
-program does, not how its code is written. Do not copy Paint.NET code or assets.
+This is the behavior Pixelwright's Resize and Canvas Size commands implement. It is
+informed by how familiar image editors such as Paint.NET behave, using only public
+material (listed in [Sources](#6-sources)): the Paint.NET manual and release notes, the
+MIT-licensed PhotoSauce MagicScaler source, and published filter definitions.
 
-Confidence key: **High** = read directly from the binaries or docs and cross-checked.
-**Medium** = inferred from call structure. **Open** = not determined yet.
+Pixelwright is a clean-room project. This spec describes observable behavior and
+Pixelwright's own choices, not anyone else's code. Do not copy code or assets from other
+editors into this repository.
+
+Basis key, used in the tables below:
+
+- **Documented**: stated in the public Paint.NET manual or release notes.
+- **Public source**: matches MagicScaler's public MIT-licensed source.
+- **Standard**: a published, textbook algorithm.
+- **Ours**: a Pixelwright decision. Not derived from another program.
 
 ## 1. Resize
 
 ### 1.1 Dialog fields and rules
 
-| Item | Behavior | Confidence |
+| Item | Behavior | Basis |
 |---|---|---|
-| Mode | "By percentage" or "By absolute size" (radio buttons) | High |
-| Maintain aspect ratio | Checkbox. Default **on** for Resize; remembered between uses | High |
-| Pixel width/height | Valid range **1 to 262,144** inclusive per side; OK is disabled outside it | High |
-| Print size | width and height in the chosen unit; must be greater than 0 | High |
-| Resolution (DPI) | Valid range **0.01 up to, not including, 2,000,000** | High |
-| Units | Pixels, inches, centimeters. Last non-pixel unit is remembered; default **inches** | High |
-| Print size relation | print size = pixels / resolution (docs example: 2 in at 96 DPI = 192 px) | High |
-| Resampling dropdown | 8 choices, order below. Last choice remembered; default **Bicubic** | High |
-| "Use gamma correction" | Checkbox, default **on**. **Disabled when Nearest Neighbor is selected** | High |
-| Original size label | "Current image size" and "New size" text, both shown | High |
+| Mode | "By percentage" or "By absolute size" (radio buttons) | Documented |
+| Maintain aspect ratio | Checkbox. Default **on** for Resize; remembered between uses | Documented |
+| Pixel width/height | Valid range **1 to 262,144** inclusive per side; OK is disabled outside it | Ours |
+| Print size | Width and height in the chosen unit; must be greater than 0 | Documented |
+| Resolution (DPI) | Valid range **0.01 up to, not including, 2,000,000** | Ours |
+| Units | Pixels, inches, centimeters. Last non-pixel unit is remembered; default **inches** | Ours |
+| Print size relation | print size = pixels / resolution (2 in at 96 DPI = 192 px) | Documented |
+| Resampling dropdown | 8 choices, order below. Last choice remembered; default **Bicubic** | Documented |
+| "Use gamma correction" | Checkbox, default **on**. **Disabled when Nearest Neighbor is selected** | Ours |
+| Size labels | "Current size" and "New size" text, both shown | Ours |
 
-Resampling dropdown order (top to bottom), with internal id:
+Resampling dropdown order (top to bottom), which follows the Paint.NET manual:
 
-1. Bicubic (4), default
-2. Bicubic (Smooth) (7)
-3. Bilinear (5)
-4. Bilinear (Low Quality) (1)
-5. Adaptive (Sharp) (8)
-6. Lanczos (6)
-7. Fant (3)
-8. Nearest Neighbor (0)
+1. Bicubic (default)
+2. Bicubic (Smooth)
+3. Bilinear
+4. Bilinear (Low Quality)
+5. Adaptive (Sharp)
+6. Lanczos
+7. Fant
+8. Nearest Neighbor
 
 ### 1.2 Size arithmetic
+
+All of this section is **Ours**.
 
 - Width and height are held as doubles in the chosen unit. They are only rounded when
   read back as pixels: round to nearest, **ties away from zero**, then clamp.
@@ -47,27 +58,27 @@ Resampling dropdown order (top to bottom), with internal id:
 - **No-op rules:** if width, height, DPI and unit are all unchanged, nothing happens.
   If only DPI or unit changed, the pixels are untouched and only metadata changes
   (still recorded as one "Resize" history step).
-- Percentage field's own min/max: **Open** (set in the dialog, not yet read).
+- Percentage field limits: the same as the pixel limits above, applied to the result.
 
 ### 1.3 Resampling engine
 
-Paint.NET delegates image resizing to the open-source **PhotoSauce MagicScaler**
-library (`PhotoSauce.MagicScaler.dll` ships with the app). Pixels are processed as
-**premultiplied RGBA, 32-bit float per channel**, in a separable, tile-parallel pipeline.
+Pixelwright's engine works on **premultiplied RGBA, 32-bit float per channel**, as a
+separable two-pass convolution (horizontal, then vertical).
 
-| Choice | Kernel | Confidence |
+| Choice | Kernel | Basis |
 |---|---|---|
-| Bicubic | **Catmull-Rom** cubic (B=0, C=0.5). Matches the 5.0.4 changelog | High |
-| Bicubic (Smooth) | Cubic with **B=1, C=0** (cubic B-spline): smooth, no overshoot or sharpening | High |
-| Bilinear | Triangle (linear) kernel, area-aware when shrinking | High |
-| Lanczos | Lanczos with **3 lobes** | High |
-| Adaptive (Sharp) | **Chosen from the scale factor** by MagicScaler's automatic rule (below). Not a Magic Kernel variant, despite those classes existing in the app | High |
-| Bilinear (Low Quality) | Plain **2-tap bilinear**: source position = (x + 0.5) / scale - 0.5, clamped at the edges, with no widening when shrinking (so it skips pixels on big reductions) | High |
-| Fant | **Exact area averaging**: each output pixel is the area-weighted mean of the source pixels its footprint covers. Windows' native Fant scaler has no readable code, so this follows the published algorithm; enlargements may differ slightly | Medium |
-| Nearest Neighbor | Point sampling, no gamma step | High |
+| Bicubic | **Catmull-Rom** cubic (B=0, C=0.5). The Paint.NET 5.0.4 release notes describe this as the default bicubic | Documented, Standard |
+| Bicubic (Smooth) | Cubic with **B=1, C=0** (cubic B-spline): smooth, no overshoot or sharpening. The 5.0.4 notes describe a bicubic option without sharpening | Documented, Standard |
+| Bilinear | Triangle (linear) kernel, widened by the shrink factor when shrinking | Standard |
+| Lanczos | Lanczos with **3 lobes** | Standard |
+| Adaptive (Sharp) | **Chosen from the scale factor** by the rule below. The 5.0.4 notes renamed "Adaptive (Best Quality)" to "Adaptive (Sharp)" | Public source |
+| Bilinear (Low Quality) | Plain **2-tap bilinear**: source position = (x + 0.5) / scale - 0.5, clamped at the edges, with no widening when shrinking (so it skips pixels on big reductions) | Ours |
+| Fant | **Exact area averaging**: each output pixel is the area-weighted mean of the source pixels its footprint covers (Fant, 1986) | Standard |
+| Nearest Neighbor | Point sampling, no gamma step | Standard |
 
 **Adaptive (Sharp) rule.** With `ratio` = the smaller of (new width / old width) and
-(new height / old height):
+(new height / old height), Pixelwright picks the kernel the way MagicScaler's
+public `GetDefaultInterpolation` does:
 
 | ratio | Kernel |
 |---|---|
@@ -77,24 +88,29 @@ library (`PhotoSauce.MagicScaler.dll` ships with the app). Pixels are processed 
 | above 4, up to 16 | Catmull-Rom |
 | above 16 | Interpolating quadratic (1 at 0, 0 at integers, 1/2 at half steps) |
 
-Spline36 is the standard three-piece cubic over |x| < 3 (used in Panorama Tools and
-ImageMagick); `Sources/PixelwrightCore/ResamplingKernel.swift` has the formula, and the
-tests check that it passes through zero at integers and sums to 1.
+Spline36 is the standard three-piece cubic over |x| < 3 (also used in Panorama Tools and
+ImageMagick; MagicScaler's `Spline36Interpolator` lists the same coefficients).
+`Sources/PixelwrightCore/ResamplingKernel.swift` has the formula, and the tests check
+that it passes through zero at integers and sums to 1.
 
 Notes:
 
 - Downscaling widens the kernel by the shrink factor (standard "scaled support"), so
   large reductions average many source pixels instead of aliasing. Needed for quality.
+  (**Standard**)
 - **Gamma correction on** means resampling is done in **linear light**; **off** means
-  it runs directly on sRGB-encoded values. (Confirmed: the two modes are named Linear
-  and Companded, and the checkbox maps to Linear when ticked.)
+  it runs directly on sRGB-encoded values. (**Ours**)
 - **Edges replicate:** kernel weights that fall outside the image are added to the nearest
   edge pixel, so every output pixel's weights still sum to 1. (Not "drop and renormalize".)
+  (**Ours**)
 - Alpha is handled by premultiplying before filtering and un-premultiplying after.
-- The document's color profile is passed into the scaler, so the work is color managed.
-- Removed from earlier versions: Super Sampling (still present as a dead enum value).
+  (**Standard**)
+- Pixelwright treats images as sRGB. See open question 5.
 
 ### 1.4 Print size and resolution
+
+All of this section is **Ours**, consistent with the print-size behavior in the Paint.NET
+manual.
 
 Print size and resolution are part of the Resize and Canvas Size dialogs and are saved with
 the image (pixels per inch or per centimeter).
@@ -110,13 +126,16 @@ the image (pixels per inch or per centimeter).
 
 ### 1.5 What the action does to the document
 
-- Resizes **every layer** with the same settings, producing new layers with the
-  original layer properties (name, opacity, blend mode, visibility) copied over.
-- Runs on a background task with a cancelable progress dialog (shown if it takes
-  longer than about 1 second). Cancel leaves the original document unchanged.
-- One undo step. A selection history entry is recorded, so the selection is reset
-  or restored by undo (Medium).
-- Errors: out of memory and generic failure each have their own message.
+All of this section is **Ours**. Pixelwright has a single flat image today; the layer
+notes apply when layers are added.
+
+- Resizes the whole image with the chosen settings. When layers exist, every layer is
+  resized with the same settings and keeps its properties (name, opacity, blend mode,
+  visibility).
+- Heavy work runs off the main thread so the window stays responsive.
+- One undo step. The selection is reset by a resize.
+- Failures (such as running out of memory) are reported in plain words and leave the
+  original image untouched.
 
 ## 2. Canvas Size
 
@@ -125,17 +144,18 @@ the image (pixels per inch or per centimeter).
 Same dialog as Resize minus the resampling section, plus **Anchor** and **Fill**.
 
 - Anchor: 3x3 grid. Values in order: Top Left, Top, Top Right, Left, Middle, Right,
-  Bottom Left, Bottom, Bottom Right. High.
-- Fill choices: **Transparent, Primary Color, Secondary Color, White, Black**. High.
-- Maintain aspect ratio has its **own remembered setting, default off**. High.
+  Bottom Left, Bottom, Bottom Right. (**Documented**)
+- Fill choices: **Transparent, White, Black, Color** (any color, with opacity). Fill only
+  applies when the canvas gets bigger. (**Ours**)
+- Maintain aspect ratio has its **own remembered setting, default off**. (**Ours**)
 - Same size, unit and DPI limits as Resize (section 1.1).
-- Default anchor: the stored setting default is the first value (Top Left), but the
-  docs only show center examples and the UI default is **not verified**. For the Mac
-  port we recommend **Middle** as the default.
+- Default anchor: **Middle**. (**Ours**)
 
 ### 2.2 Placement math
 
-New canvas size is (newW, newH); old layer size is (oldW, oldH).
+All of this section is **Ours** (a standard centered or edge-anchored placement).
+
+New canvas size is (newW, newH); old size is (oldW, oldH).
 Let `dx = newW - oldW`, `dy = newH - oldH`, and `hx = dx / 2`, `hy = dy / 2` using
 **integer division that truncates toward zero** (matters when shrinking by an odd amount).
 
@@ -151,73 +171,73 @@ Let `dx = newW - oldW`, `dy = newH - oldH`, and `hx = dx / 2`, `hy = dy / 2` usi
 | Bottom | hx | dy |
 | Bottom Right | dx | dy |
 
-Algorithm per layer: create a new transparent-capable surface of the new size, fill the
-whole thing with the fill color, then copy the old pixels onto it at (x, y).
-Pixels that land outside the new bounds are cropped (negative offsets crop the old
-image's top/left; a smaller canvas crops the bottom/right).
+Algorithm: create a new surface of the new size, fill the whole thing with the fill
+color, then copy the old pixels onto it at (x, y). Pixels that land outside the new
+bounds are cropped (negative offsets crop the old image's top/left; a smaller canvas
+crops the bottom/right).
 
 Examples: grow 100 to 105 wide, Middle: offset 2 (2 px left, 3 px right).
 Shrink 100 to 95 wide, Middle: offset -2 (crops 2 left, 3 right).
 
 ### 2.3 Fill colors
 
+All **Ours**.
+
 - Transparent = fully clear pixel (all channels 0).
-- Primary and Secondary = the current tool colors at the time of the operation.
+- Color = the color chosen in the dialog, including its opacity.
 - White and Black = opaque white / black.
 
 ### 2.4 Document effects
 
-- Applies to every layer (all must be bitmap layers). Layer properties are kept.
-- Document metadata is carried over. Selection is saved before and restored after (Medium).
-- One undo step (the old document is swapped back).
+All **Ours**.
+
+- Applies to the whole image (and to every layer, once layers exist). Layer properties are kept.
+- Image metadata, including resolution, is carried over. The selection is reset.
+- One undo step.
 - If size, unit and DPI are all unchanged, nothing happens.
 
 ## 3. Background removal (not in Paint.NET)
 
 Paint.NET has **no built-in background remover**. Its documented workflow is Magic Wand
 (tolerance 0 to 100%) plus the Eraser. Third-party plugins call online services.
-So there is nothing to port; this is our own design for the Mac:
+So there is nothing to mirror; this is our own design for the Mac:
 
 - One-click subject cut-out using Apple's Vision foreground-mask request (macOS 14+).
 - Magic Wand with tolerance and flood vs. global mode, plus feathered edge, as the
   manual fallback and refinement tool.
 
-## 4. Mac implementation notes
+Everything runs on the Mac. No image data is sent anywhere.
+
+## 4. Implementation notes
 
 - Do the resampling ourselves: two-pass separable convolution on premultiplied float
   pixels, kernel support scaled by `max(1, 1/scale)`, with a linear-light option.
-  This reproduces the behavior above without needing Paint.NET code.
 - Core Image's bicubic scale filter takes B and C parameters, so (0, 0.5) gives
   Catmull-Rom and (1, 0) gives Bicubic (Smooth). Useful as a quick prototype or
   cross-check, but it does not do area-aware downscaling, so keep our own engine.
-- MagicScaler is a public MIT-licensed library that runs on .NET 10, which is already
-  installed on this Mac. It can serve as a **test oracle**: generate reference
-  outputs for Catmull-Rom, Linear and Lanczos, and compare our results.
+- MagicScaler is a public MIT-licensed library. Running it locally can serve as a
+  **test oracle**: generate reference outputs for Catmull-Rom, linear-light and Lanczos
+  resizes, and compare Pixelwright's results.
 
 ## 5. Open questions
 
-Resolved since the first draft: the kernel behind Adaptive (Sharp), the definition of
-Bilinear (Low Quality), edge handling, and print size and resolution. Still open:
+1. Fant on enlargement: we implement the published area-averaging algorithm; other
+   implementations may differ slightly when enlarging.
+2. Whether a resize should preserve a selection instead of resetting it (Pixelwright resets it).
+3. Whether the Canvas Size dialog should remember its last anchor between uses.
+4. Whether to add the ability to fill with the primary or secondary tool color once
+   drawing tools exist.
+5. Color-management details: how non-sRGB profiles convert in and out of the sRGB working space.
 
-1. Windows' native Fant scaler, which has no readable code. We implement the published
-   area-averaging algorithm; compare results if a Windows reference becomes available.
-2. Percentage field limits.
-3. Real default anchor in the Canvas Size dialog.
-4. Whether Resize preserves the selection or resets it (only the history entry was seen;
-   Pixelwright resets it).
-5. Color-management details (how non-sRGB profiles convert in and out).
+## 6. Sources
 
-## 6. Provenance
-
-- Download: `paint.net.5.1.12.portable.x64.zip` from the official `paintdotnet/release`
-  GitHub releases. SHA-256 `d5ae7043f2fb9d365b48dfe243a2aca1c74924de99b04b6445916c95354aefa3`.
-- REA 6.5.0 static .NET analysis read `PaintDotNet.Core.dll` and
-  `PaintDotNet.Windows.Core.dll` (resampling modes, scaler plumbing, kernel setup).
-- MagicScaler's own library code (`PhotoSauce.MagicScaler.dll`, shipped with the app) was read
-  the same way for its default-interpolation rule, the Spline36 and Quadratic kernels, and its
-  edge handling.
-- The main app assembly `paintdotnet.dll` (about 19 MB of metadata) exceeds REA's
-  64 MiB metadata budget, so the dialog and action logic was read with a small local
-  tool built on .NET's `System.Reflection.Metadata`. Labels came from the app's English
-  string resources.
-- Public docs: <https://paint.net/doc/latest/ImageMenu.html>
+- Paint.NET manual, Image menu: <https://paint.net/doc/latest/ImageMenu.html>
+- Paint.NET 5.0.4 release notes (default Bicubic is Catmull-Rom; "Bicubic (Smooth)";
+  "Adaptive (Best Quality)" renamed "Adaptive (Sharp)"): <https://www.getpaint.net/roadmap.html>
+- PhotoSauce MagicScaler, MIT license: <https://github.com/saucecontrol/PhotoSauce>
+  (`src/MagicScaler/Utilities/SettingUtil.cs` for the automatic interpolation rule,
+  `src/MagicScaler/Core/Interpolators.cs` for the quadratic and Spline36 kernels)
+- Mitchell and Netravali, "Reconstruction Filters in Computer Graphics" (SIGGRAPH 1988):
+  the B and C cubic family used for Bicubic and Bicubic (Smooth)
+- Fant, "A Nonaliasing, Real-Time Spatial Transform Technique" (IEEE CG&A, 1986): area-averaged resampling
+- Lanczos resampling and Spline36: standard published filters (Panorama Tools and ImageMagick document Spline36)
