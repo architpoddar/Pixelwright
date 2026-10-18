@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// Pixelwright's identity: name, tagline, colors and the precision "P" mark.
@@ -116,11 +117,34 @@ struct RibbonPGlyph: View {
     }
 }
 
-/// The app icon's tile: dark machined squircle with the sculptural ribbon P. Scales to any size.
+/// The app icon, at any size. Inside the app bundle this is the real icon, so the window, the welcome
+/// screen and the About window always match what is in the Dock and Finder. When the app is run outside a
+/// bundle (for example `swift run`) there is no icon, so it falls back to a drawn approximation.
 struct BrandMark: View {
     var size: CGFloat = 64
 
+    private static var bundledIcon: NSImage? {
+        guard Bundle.main.bundleIdentifier == "com.pixelwright.app" else { return nil }
+        return NSApp.applicationIconImage
+    }
+
     var body: some View {
+        Group {
+            if let icon = Self.bundledIcon {
+                Image(nsImage: icon)
+                    .resizable()
+                    .interpolation(.high)
+                    .aspectRatio(contentMode: .fit)
+            } else {
+                drawnMark
+            }
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+
+    /// Fallback: a dark rounded square with the flat ribbon P.
+    private var drawnMark: some View {
         ZStack {
             RoundedRectangle(cornerRadius: size * 0.225, style: .continuous)
                 .fill(Brand.gradient)
@@ -130,7 +154,6 @@ struct BrandMark: View {
                 )
             RibbonPGlyph(size: size * 0.52)
         }
-        .frame(width: size, height: size)
         .shadow(color: .black.opacity(0.28), radius: size * 0.05, y: size * 0.025)
     }
 }
